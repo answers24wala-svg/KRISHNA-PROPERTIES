@@ -136,7 +136,7 @@ export default function Footer({ setScreen, onSelectLocality }: FooterProps) {
         {/* Bottom copyright */}
         <div className="flex flex-col sm:flex-row items-center justify-between pt-8 text-xs text-brand-on-surface-variant">
           <span>
-            © {new Date().getFullYear()} Yesha Properties / Krishna Properties. All rights reserved.
+            © {new Date().getFullYear()} Krishna Properties. All rights reserved.
           </span>
           <span className="mt-2 sm:mt-0 text-gray-400 font-mono">
             Premium Real Estate Solutions • Ahmedabad

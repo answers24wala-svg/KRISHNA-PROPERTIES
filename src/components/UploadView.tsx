@@ -614,7 +614,7 @@ export default function UploadView({
               {isSubmitting ? 'Verifying & Uploading...' : 'Submit Property'}
             </button>
             <p className="text-[10px] text-gray-400 text-center leading-relaxed">
-              By submitting, you agree to Yesha Properties Terms of Service and Privacy Policy.
+              By submitting, you agree to Krishna Properties Terms of Service and Privacy Policy.
             </p>
           </div>
 
