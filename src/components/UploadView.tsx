@@ -25,7 +25,7 @@ export default function UploadView({
   const [price, setPrice] = useState(editingProperty ? String(editingProperty.price) : '');
   const [location, setLocation] = useState(editingProperty?.location || 'Prahlad Nagar, Ahmedabad');
   const [area, setArea] = useState(editingProperty ? String(editingProperty.areaSqft) : '');
-  const [propertyType, setPropertyType] = useState<'Apartment' | 'Independent Villa' | 'Penthouse' | 'Commercial'>(editingProperty?.propertyType || 'Apartment');
+  const [propertyType, setPropertyType] = useState<'Apartment' | 'Independent Villa' | 'Penthouse' | 'Commercial' | 'Flat' | 'Bungalow'>(editingProperty?.propertyType || 'Apartment');
   const [description, setDescription] = useState(editingProperty?.description || '');
   const [mapLink, setMapLink] = useState('');
   
@@ -350,6 +350,8 @@ export default function UploadView({
                     <option value="Independent Villa">Independent Villa</option>
                     <option value="Penthouse">Penthouse</option>
                     <option value="Commercial">Commercial</option>
+                    <option value="Flat">Flat</option>
+                    <option value="Bungalow">Bungalow</option>
                   </select>
                 </div>
               </div>

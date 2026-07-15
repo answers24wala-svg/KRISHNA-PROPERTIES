@@ -65,6 +65,8 @@ export default function ListingsView({
     'Independent Villa': searchFilters.propertyType === 'Independent Villa',
     'Penthouse': searchFilters.propertyType === 'Penthouse',
     'Commercial': searchFilters.propertyType === 'Commercial',
+    'Flat': searchFilters.propertyType === 'Flat',
+    'Bungalow': searchFilters.propertyType === 'Bungalow',
   });
 
   const [selectedStatus, setSelectedStatus] = useState<string | null>(searchFilters.listingStatus || null);
@@ -91,6 +93,8 @@ export default function ListingsView({
       'Independent Villa': false,
       'Penthouse': false,
       'Commercial': false,
+      'Flat': false,
+      'Bungalow': false,
     });
     setSelectedStatus(null);
     setFurnishedFilter(false);

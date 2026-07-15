@@ -7,28 +7,31 @@ interface HomeViewProps {
   setScreen: (screen: 'home' | 'listings' | 'detail' | 'upload') => void;
   setSelectedPropertyId: (id: string) => void;
   onSearch: (filters: any) => void;
+  properties: Property[];
 }
 
-export default function HomeView({ setScreen, setSelectedPropertyId, onSearch }: HomeViewProps) {
+export default function HomeView({ setScreen, setSelectedPropertyId, onSearch, properties }: HomeViewProps) {
   // Dropdown states
   const [location, setLocation] = useState('All Ahmedabad');
   const [propertyType, setPropertyType] = useState('Any Type');
-  const [budget, setBudget] = useState('Max Budget');
+  const [budget, setBudget] = useState('');
 
   const [locationOpen, setLocationOpen] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
   const [budgetOpen, setBudgetOpen] = useState(false);
 
   // Get first 3 properties for featured
-  const featuredProperties = INITIAL_PROPERTIES.filter(p => p.id === '1' || p.id === '2' || p.id === '3');
+  const featuredProperties = properties.slice(0, 3);
 
   const handleSearchSubmit = () => {
     const searchFilters: any = {};
     if (location !== 'All Ahmedabad') searchFilters.locationQuery = location;
     if (propertyType !== 'Any Type') searchFilters.propertyType = propertyType;
-    if (budget !== 'Max Budget') {
-      const budgetVal = budget === '₹50 Lakh' ? 5000000 : budget === '₹1 Cr' ? 10000000 : budget === '₹2 Cr' ? 20000000 : budget === '₹4 Cr' ? 40000000 : 100000000;
-      searchFilters.maxPrice = budgetVal;
+    if (budget.trim() !== '') {
+      const budgetVal = parseFloat(budget);
+      if (!isNaN(budgetVal) && budgetVal > 0) {
+        searchFilters.maxPrice = budgetVal;
+      }
     }
     onSearch(searchFilters);
     setScreen('listings');
@@ -118,7 +121,7 @@ export default function HomeView({ setScreen, setSelectedPropertyId, onSearch }:
               </button>
               {typeOpen && (
                 <div className="absolute left-0 right-0 mt-1 z-50 bg-white border border-gray-100 rounded-lg shadow-lg py-1.5 text-sm">
-                  {['Any Type', 'Apartment', 'Independent Villa', 'Penthouse', 'Commercial'].map((type) => (
+                  {['Any Type', 'Apartment', 'Independent Villa', 'Penthouse', 'Commercial', 'Flat', 'Bungalow'].map((type) => (
                     <button
                       key={type}
                       onClick={() => { setPropertyType(type); setTypeOpen(false); }}
@@ -131,30 +134,16 @@ export default function HomeView({ setScreen, setSelectedPropertyId, onSearch }:
               )}
             </div>
 
-            {/* Budget Dropdown */}
+            {/* Budget Input */}
             <div className="relative">
-              <label className="block text-xs font-semibold uppercase tracking-wider text-brand-on-surface-variant mb-2">Budget</label>
-              <button
-                type="button"
-                onClick={() => { setBudgetOpen(!budgetOpen); setLocationOpen(false); setTypeOpen(false); }}
-                className="w-full flex items-center justify-between px-3.5 py-3 border border-gray-200 rounded-lg text-sm text-brand-on-surface bg-white hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                <span className="truncate font-medium">{budget}</span>
-                <ChevronDown className="w-4 h-4 text-brand-outline" />
-              </button>
-              {budgetOpen && (
-                <div className="absolute left-0 right-0 mt-1 z-50 bg-white border border-gray-100 rounded-lg shadow-lg py-1.5 text-sm">
-                  {['Max Budget', '₹50 Lakh', '₹1 Cr', '₹2 Cr', '₹4 Cr', '₹10 Cr'].map((b) => (
-                    <button
-                      key={b}
-                      onClick={() => { setBudget(b); setBudgetOpen(false); }}
-                      className="w-full text-left px-4 py-2 hover:bg-brand-surface-container transition-colors cursor-pointer"
-                    >
-                      {b}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <label className="block text-xs font-semibold uppercase tracking-wider text-brand-on-surface-variant mb-2">Max Budget (₹)</label>
+              <input
+                type="number"
+                value={budget}
+                onChange={(e) => setBudget(e.target.value)}
+                placeholder="e.g. 10000000 (1 Cr)"
+                className="w-full px-3.5 py-3 border border-gray-200 rounded-lg text-sm text-brand-on-surface bg-white hover:bg-gray-50 focus:outline-hidden focus:ring-1 focus:ring-brand-secondary transition-all"
+              />
             </div>
 
             {/* Search Button */}

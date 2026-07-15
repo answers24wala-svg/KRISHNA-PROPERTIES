@@ -161,6 +161,7 @@ export default function App() {
                     }}
                     setSelectedPropertyId={setSelectedPropertyId}
                     onSearch={setSearchFilters}
+                    properties={properties}
                   />
                 )}
 

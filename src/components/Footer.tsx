@@ -40,17 +40,14 @@ export default function Footer({ setScreen, onSelectLocality }: FooterProps) {
               Providing premium real estate solutions in Ahmedabad with unmatched trust, transparency, and high quality services.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="p-2 rounded-full bg-white hover:bg-brand-secondary hover:text-white transition-colors text-brand-on-surface-variant shadow-xs">
-                <Globe className="w-4 h-4" />
-              </a>
-              <a href="#" className="p-2 rounded-full bg-white hover:bg-brand-secondary hover:text-white transition-colors text-brand-on-surface-variant shadow-xs">
-                <Twitter className="w-4 h-4" />
-              </a>
-              <a href="#" className="p-2 rounded-full bg-white hover:bg-brand-secondary hover:text-white transition-colors text-brand-on-surface-variant shadow-xs">
+              <a 
+                href="https://www.instagram.com/_krishna_properties" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="p-2 rounded-full bg-white hover:bg-brand-secondary hover:text-white transition-colors text-brand-on-surface-variant shadow-xs flex items-center justify-center"
+                title="Follow us on Instagram"
+              >
                 <Instagram className="w-4 h-4" />
-              </a>
-              <a href="#" className="p-2 rounded-full bg-white hover:bg-brand-secondary hover:text-white transition-colors text-brand-on-surface-variant shadow-xs">
-                <Linkedin className="w-4 h-4" />
               </a>
             </div>
           </div>
