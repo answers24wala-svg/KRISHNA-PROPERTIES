@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
-import { MapPin, Menu, X, PlusCircle, Lock, LogOut, CheckCircle2 } from 'lucide-react';
+import { MapPin, Menu, X, PlusCircle, Lock, LogOut, CheckCircle2, User } from 'lucide-react';
 import KPLogo from './KPLogo';
+import { supabase, isSupabaseConfigured } from '../supabaseClient';
 
 interface NavbarProps {
   currentScreen: 'home' | 'listings' | 'detail' | 'upload';
@@ -16,6 +17,9 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navItems = [
     { label: 'Home', screen: 'home' as const },
@@ -53,22 +57,97 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
 
-  const handleLoginSubmit = (e: FormEvent) => {
+  const handleLoginSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoginError('');
     
-    // Check credentials (Gopalnaidu085@gmail.com / Naidu@gopal#2207)
-    if (username.toLowerCase() === 'gopalnaidu085@gmail.com' && password === 'Naidu@gopal#2207') {
-      setLoginSuccess(true);
-      setTimeout(() => {
-        setIsAdmin(true);
-        setIsLoginOpen(false);
-        setLoginSuccess(false);
-        setUsername('');
-        setPassword('');
-      }, 1500);
+    // Check credentials locally first as bypass for sandboxes
+    const isAdminCreds = username.toLowerCase() === 'gopalnaidu085@gmail.com' && password === 'Naidu@gopal#2207';
+
+    if (isSupabaseConfigured && supabase !== null) {
+      setIsSubmitting(true);
+      try {
+        if (authMode === 'login') {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: username,
+            password: password,
+          });
+          if (error) {
+            // Local admin bypass
+            if (isAdminCreds) {
+              setLoginSuccess(true);
+              setTimeout(() => {
+                setIsAdmin(true);
+                setUserEmail('Gopalnaidu085@gmail.com');
+                setIsLoginOpen(false);
+                setLoginSuccess(false);
+                setUsername('');
+                setPassword('');
+              }, 1000);
+              return;
+            }
+            setLoginError(error.message);
+            return;
+          }
+          const email = data.user?.email || username;
+          setLoginSuccess(true);
+          setTimeout(() => {
+            if (email.toLowerCase() === 'gopalnaidu085@gmail.com') {
+              setIsAdmin(true);
+            } else {
+              setIsAdmin(false);
+            }
+            setUserEmail(email);
+            setIsLoginOpen(false);
+            setLoginSuccess(false);
+            setUsername('');
+            setPassword('');
+          }, 1000);
+        } else {
+          const { error } = await supabase.auth.signUp({
+            email: username,
+            password: password,
+          });
+          if (error) {
+            setLoginError(error.message);
+            return;
+          }
+          alert('Sign up successful! Please check your email inbox to verify your account, then log in.');
+          setAuthMode('login');
+        }
+      } catch (err: any) {
+        setLoginError(err?.message || String(err));
+      } finally {
+        setIsSubmitting(false);
+      }
     } else {
-      setLoginError('Invalid admin email or password.');
+      // Local sandbox logic
+      if (authMode === 'login') {
+        if (isAdminCreds) {
+          setLoginSuccess(true);
+          setTimeout(() => {
+            setIsAdmin(true);
+            setUserEmail('Gopalnaidu085@gmail.com');
+            setIsLoginOpen(false);
+            setLoginSuccess(false);
+            setUsername('');
+            setPassword('');
+          }, 1000);
+        } else {
+          setLoginSuccess(true);
+          setTimeout(() => {
+            setIsAdmin(false);
+            setUserEmail(username);
+            setIsLoginOpen(false);
+            setLoginSuccess(false);
+            setUsername('');
+            setPassword('');
+          }, 1000);
+        }
+      } else {
+        alert('Sign up successful (Local Sandbox Mode)! You can now log in with these credentials.');
+        setAuthMode('login');
+      }
     }
   };
 
@@ -76,8 +155,16 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
     setLogoutConfirmOpen(true);
   };
 
-  const confirmLogout = () => {
+  const confirmLogout = async () => {
+    if (isSupabaseConfigured && supabase !== null) {
+      try {
+        await supabase.auth.signOut();
+      } catch (e) {
+        console.error(e);
+      }
+    }
     setIsAdmin(false);
+    setUserEmail(null);
     setLogoutConfirmOpen(false);
     if (currentScreen === 'upload') {
       setScreen('home');
@@ -137,28 +224,32 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
               <span>Ahmedabad</span>
             </div>
 
-            {/* Admin Status / Login Indicator */}
-            {isAdmin ? (
-              <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1 text-[11px] font-bold text-brand-secondary bg-brand-secondary/10 px-2.5 py-1.5 rounded-md border border-brand-secondary/20 uppercase tracking-wider">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Admin Mode
+            {/* Login / Auth Indicator */}
+            {isAdmin || userEmail ? (
+              <div className="flex items-center gap-2 bg-brand-primary/10 border border-brand-primary/20 px-3 py-1.5 rounded-full text-xs font-semibold text-brand-primary">
+                <User className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate max-w-[120px]">
+                  {isAdmin ? 'Admin Mode' : userEmail}
                 </span>
-                <button
+                <button 
                   onClick={handleLogoutClick}
-                  className="p-2 text-gray-500 hover:text-red-600 rounded-md hover:bg-red-50 border border-gray-100 transition-colors cursor-pointer"
-                  title="Log out of Admin Mode"
+                  className="ml-1 text-gray-400 hover:text-red-500 cursor-pointer shrink-0"
+                  title="Log out"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5" />
                 </button>
               </div>
             ) : (
-              <button 
-                className="p-2 text-gray-500 hover:text-brand-secondary rounded-md hover:bg-gray-50 border border-gray-200 transition-all cursor-pointer flex items-center justify-center"
-                onClick={() => setIsLoginOpen(true)}
-                title="Admin Portal Login"
+              <button
+                onClick={() => {
+                  setAuthMode('login');
+                  setIsLoginOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 border border-gray-200 hover:border-brand-primary hover:bg-brand-surface rounded-full text-xs font-semibold text-brand-on-surface hover:text-brand-primary transition-all cursor-pointer flex items-center justify-center"
+                title="Login / Signup"
               >
-                <Lock className="w-4 h-4" />
+                <User className="w-4 h-4" />
+                <span>Login / Signup</span>
               </button>
             )}
 
@@ -211,41 +302,44 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
               </button>
             ))}
             <div className="pt-4 border-t border-gray-100 space-y-2.5">
-              {isAdmin ? (
+              {isAdmin || userEmail ? (
                 <>
                   <div className="flex items-center justify-between px-3 py-2 bg-brand-secondary/5 rounded-md border border-brand-secondary/10">
-                    <span className="flex items-center gap-1 text-[11px] font-bold text-brand-secondary uppercase tracking-wider">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      Admin Mode Active
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-brand-secondary uppercase tracking-wider truncate max-w-[180px]">
+                      <User className="w-3.5 h-3.5 shrink-0" />
+                      <span>{isAdmin ? 'Admin Mode Active' : userEmail}</span>
                     </span>
                     <button
                       onClick={() => { setIsOpen(false); handleLogoutClick(); }}
-                      className="text-xs font-bold text-red-600 hover:underline flex items-center gap-1 cursor-pointer"
+                      className="text-xs font-bold text-red-600 hover:underline flex items-center gap-1 cursor-pointer shrink-0"
                     >
                       <LogOut className="w-3 h-3" />
-                      Log out
+                      <span>Log out</span>
                     </button>
                   </div>
-                  <button 
-                    className="block w-full text-center py-2.5 text-xs font-bold uppercase tracking-wider rounded-md bg-brand-primary text-white cursor-pointer"
-                    onClick={() => {
-                      setIsOpen(false);
-                      setScreen('upload');
-                    }}
-                  >
-                    List Property
-                  </button>
+                  {isAdmin && (
+                    <button 
+                      className="block w-full text-center py-2.5 text-xs font-bold uppercase tracking-wider rounded-md bg-brand-primary text-white cursor-pointer"
+                      onClick={() => {
+                        setIsOpen(false);
+                        setScreen('upload');
+                      }}
+                    >
+                      List Property
+                    </button>
+                  )}
                 </>
               ) : (
                 <button 
                   className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-md border border-gray-200 text-gray-700 hover:bg-gray-50 cursor-pointer"
                   onClick={() => {
                     setIsOpen(false);
+                    setAuthMode('login');
                     setIsLoginOpen(true);
                   }}
                 >
-                  <Lock className="w-3.5 h-3.5" />
-                  <span>Admin Portal</span>
+                  <User className="w-3.5 h-3.5" />
+                  <span>Login / Signup</span>
                 </button>
               )}
             </div>
@@ -254,7 +348,7 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
       )}
       </header>
 
-      {/* Elegant Admin Login Modal */}
+      {/* Elegant Login / Signup Modal */}
       {isLoginOpen && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
           <div className="relative w-full max-w-sm my-auto bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 md:p-8 overflow-y-auto max-h-[90vh]">
@@ -263,9 +357,47 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
             <div className="flex flex-col items-center text-center space-y-3 mb-6">
               <KPLogo className="w-14 h-14" />
               <div>
-                <h3 className="font-display text-lg font-black tracking-tight text-brand-on-surface">Admin Portal Login</h3>
-                <p className="text-xs text-brand-on-surface-variant font-light mt-0.5">Use administrative credentials to manage listings.</p>
+                <h3 className="font-display text-lg font-black tracking-tight text-brand-on-surface">
+                  {authMode === 'login' ? 'Login' : 'Create Account'}
+                </h3>
+                <p className="text-xs text-brand-on-surface-variant font-light mt-0.5">
+                  {authMode === 'login' 
+                    ? 'Log in to browse properties and manage listings.' 
+                    : 'Sign up to register a new user account.'}
+                </p>
               </div>
+            </div>
+
+            {/* Login / Signup mode tabs */}
+            <div className="flex bg-gray-50 p-1 rounded-lg mb-6 border border-gray-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('login');
+                  setLoginError('');
+                }}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                  authMode === 'login' 
+                    ? 'bg-white text-brand-primary shadow-xs' 
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                Login
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('signup');
+                  setLoginError('');
+                }}
+                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                  authMode === 'signup' 
+                    ? 'bg-white text-brand-primary shadow-xs' 
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                Sign Up
+              </button>
             </div>
 
             {/* Form or Success indicator */}
@@ -275,8 +407,8 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
                   <CheckCircle2 className="w-10 h-10 stroke-[2.5]" />
                 </div>
                 <div>
-                  <h4 className="font-display font-extrabold text-base text-brand-on-surface">Successfully Authorized</h4>
-                  <p className="text-xs text-brand-on-surface-variant font-light mt-1.5">Switching to administrator workspace...</p>
+                  <h4 className="font-display font-extrabold text-base text-brand-on-surface">Successfully Authenticated</h4>
+                  <p className="text-xs text-brand-on-surface-variant font-light mt-1.5">Loading account workspace...</p>
                 </div>
               </div>
             ) : (
@@ -290,11 +422,11 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
                 <div>
                   <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">Email Address</label>
                   <input
-                    type="text"
+                    type="email"
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Gopalnaidu085@gmail.com"
+                    placeholder="name@example.com"
                     className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
                   />
                 </div>
@@ -309,7 +441,6 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
                     placeholder="••••••••••••"
                     className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
                   />
-                  <p className="text-[10px] text-gray-400 mt-1 font-mono italic">Tip: Use your registered administrator email</p>
                 </div>
 
                 <div className="pt-2 flex gap-3">
@@ -327,9 +458,12 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-2.5 text-xs font-bold uppercase tracking-wider text-white bg-brand-primary hover:bg-brand-primary/95 rounded-lg shadow-sm transition-colors cursor-pointer text-center"
+                    disabled={isSubmitting}
+                    className="flex-1 py-2.5 text-xs font-bold uppercase tracking-wider text-white bg-brand-primary hover:bg-brand-primary/95 rounded-lg shadow-sm transition-colors cursor-pointer text-center disabled:opacity-50"
                   >
-                    Authorize
+                    {isSubmitting 
+                      ? 'Wait...' 
+                      : (authMode === 'login' ? 'Log In' : 'Sign Up')}
                   </button>
                 </div>
               </form>
@@ -345,9 +479,9 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
               <LogOut className="w-6 h-6 animate-bounce" />
             </div>
             <div className="space-y-1.5">
-              <h3 className="font-display font-extrabold text-base text-brand-on-surface">Exit Admin Workspace?</h3>
+              <h3 className="font-display font-extrabold text-base text-brand-on-surface">Exit Account Session?</h3>
               <p className="text-xs text-brand-on-surface-variant font-light leading-relaxed">
-                Are you sure you want to log out of Admin Mode? You will lose temporary edit and delete privileges until you authorize again.
+                Are you sure you want to log out of your session?
               </p>
             </div>
             <div className="flex gap-3 pt-2">
