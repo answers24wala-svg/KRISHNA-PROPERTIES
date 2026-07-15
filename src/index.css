@@ -1,0 +1,65 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Montserrat", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  /* Brand colors matching the design system specs - Royal Blue & Charcoal Black Logo */
+  --color-brand-surface: #f8fafc;
+  --color-brand-surface-dim: #e2e8f0;
+  --color-brand-surface-bright: #ffffff;
+  --color-brand-surface-container-lowest: #ffffff;
+  --color-brand-surface-container-low: #f1f5f9;
+  --color-brand-surface-container: #e2e8f0;
+  --color-brand-surface-container-high: #cbd5e1;
+  --color-brand-surface-container-highest: #94a3b8;
+  --color-brand-on-surface: #0f172a;
+  --color-brand-on-surface-variant: #475569;
+  --color-brand-inverse-surface: #2E3192;
+  --color-brand-inverse-on-surface: #ffffff;
+  --color-brand-outline: #64748b;
+  --color-brand-outline-variant: #cbd5e1;
+  
+  --color-brand-primary: #2E3192; /* Royal Blue from the Logo */
+  --color-brand-on-primary: #ffffff;
+  --color-brand-primary-container: #1e2061; /* Dark royal blue shade */
+  --color-brand-on-primary-container: #c3c6ff;
+  
+  --color-brand-secondary: #1A1A1A; /* Charcoal Black from the Logo */
+  --color-brand-on-secondary: #ffffff;
+  --color-brand-secondary-container: #333333;
+  
+  --color-brand-tertiary: #4348ad; /* Companion bright blue */
+  --color-brand-on-tertiary: #ffffff;
+}
+
+/* Base style resets and global setup */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-brand-surface);
+  color: var(--color-brand-on-surface);
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-brand-surface-container-lowest);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-brand-surface-dim);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-outline-variant);
+}

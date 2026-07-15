@@ -1,0 +1,6 @@
+{
+  "name": "Krishna Properties",
+  "description": "Discover exclusive residential and commercial spaces in Ahmedabad's most sought-after neighborhoods.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
