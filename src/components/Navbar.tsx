@@ -15,6 +15,9 @@ interface NavbarProps {
   setUserRole: (role: 'buyer' | 'seller' | null) => void;
 }
 
+// Memory store to persist local sandbox registration roles across logins
+const mockUserDb: Record<string, 'buyer' | 'seller'> = {};
+
 export default function Navbar({ 
   currentScreen, 
   setScreen, 
@@ -33,6 +36,7 @@ export default function Navbar({
   const [loginError, setLoginError] = useState('');
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [signupRole, setSignupRole] = useState<'buyer' | 'seller'>('buyer');
+  const [signupSuccess, setSignupSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navItems = [
@@ -135,8 +139,8 @@ export default function Navbar({
             setLoginError(error.message);
             return;
           }
-          alert('Sign up successful! Please check your email inbox to verify your account, then log in.');
-          setAuthMode('login');
+          mockUserDb[username.toLowerCase()] = signupRole;
+          setSignupSuccess(true);
         }
       } catch (err: any) {
         setLoginError(err?.message || String(err));
@@ -158,13 +162,13 @@ export default function Navbar({
             setPassword('');
           }, 1000);
         } else {
-          // If login email contains 'seller', log in as a seller
-          const isMockSeller = username.toLowerCase().includes('seller');
+          // Look up in mock database
+          const role = mockUserDb[username.toLowerCase()] || (username.toLowerCase().includes('seller') ? 'seller' : 'buyer');
           setLoginSuccess(true);
           setTimeout(() => {
             setIsAdmin(false);
             setUserEmail(username);
-            setUserRole(isMockSeller ? 'seller' : 'buyer');
+            setUserRole(role);
             setIsLoginOpen(false);
             setLoginSuccess(false);
             setUsername('');
@@ -172,8 +176,8 @@ export default function Navbar({
           }, 1000);
         }
       } else {
-        alert(`Sign up successful (Local Sandbox Mode) as ${signupRole === 'seller' ? 'Seller' : 'Buyer'}! You can now log in with these credentials.`);
-        setAuthMode('login');
+        mockUserDb[username.toLowerCase()] = signupRole;
+        setSignupSuccess(true);
       }
     }
   };
@@ -403,6 +407,7 @@ export default function Navbar({
                 onClick={() => {
                   setAuthMode('login');
                   setLoginError('');
+                  setSignupSuccess(false);
                 }}
                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
                   authMode === 'login' 
@@ -417,6 +422,7 @@ export default function Navbar({
                 onClick={() => {
                   setAuthMode('signup');
                   setLoginError('');
+                  setSignupSuccess(false);
                 }}
                 className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
                   authMode === 'signup' 
@@ -437,6 +443,31 @@ export default function Navbar({
                 <div>
                   <h4 className="font-display font-extrabold text-base text-brand-on-surface">Successfully Authenticated</h4>
                   <p className="text-xs text-brand-on-surface-variant font-light mt-1.5">Loading account workspace...</p>
+                </div>
+              </div>
+            ) : signupSuccess ? (
+              <div className="text-center py-8 space-y-4">
+                <div className="w-16 h-16 bg-brand-primary/15 rounded-full flex items-center justify-center mx-auto text-brand-primary animate-bounce">
+                  <CheckCircle2 className="w-10 h-10 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h4 className="font-display font-extrabold text-base text-brand-on-surface">Account Created</h4>
+                  <p className="text-xs text-brand-on-surface-variant font-light mt-2 px-2 leading-relaxed">
+                    You have successfully signed up as a <span className="font-bold text-brand-primary uppercase">{signupRole}</span>.
+                    You can now select "Login" above to sign in to your new account.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSignupSuccess(false);
+                      setAuthMode('login');
+                      setUsername('');
+                      setPassword('');
+                    }}
+                    className="mt-6 w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-xs transition-colors cursor-pointer text-center"
+                  >
+                    Go to Login
+                  </button>
                 </div>
               </div>
             ) : (
