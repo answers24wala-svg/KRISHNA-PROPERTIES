@@ -287,7 +287,7 @@ export default function HomeView({ setScreen, setSelectedPropertyId, onSearch, p
                 <div>
                   <h4 className="font-display font-bold text-brand-on-surface text-base">Verified Listings</h4>
                   <p className="text-xs sm:text-sm text-brand-on-surface-variant mt-1 leading-relaxed">
-                    Every property on our portal is physically verified by our property experts to guarantee accuracy and safety.
+                    Every property on our portal is Online Verified by google Map for accurate Location to guarantee accuracy and safety.
                   </p>
                 </div>
               </div>
