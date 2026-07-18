@@ -11,6 +11,7 @@ import HomeView from './components/HomeView';
 import ListingsView from './components/ListingsView';
 import DetailView from './components/DetailView';
 import UploadView from './components/UploadView';
+import AdminDashboard from './components/AdminDashboard';
 import { motion, AnimatePresence } from 'motion/react';
 import { dbService } from './dbService';
 import { Database, Wifi, WifiOff } from 'lucide-react';
@@ -18,7 +19,7 @@ import { supabase } from './supabaseClient';
 
 export default function App() {
   // Navigation State
-  const [currentScreen, setScreen] = useState<'home' | 'listings' | 'detail' | 'upload'>('home');
+  const [currentScreen, setScreen] = useState<'home' | 'listings' | 'detail' | 'upload' | 'dashboard'>('home');
   
   // Real-time properties list state (fetched dynamically!)
   const [properties, setProperties] = useState<Property[]>([]);
@@ -241,6 +242,9 @@ export default function App() {
                       setScreen('listings');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
+                    isAdmin={isAdmin}
+                    userEmail={userEmail}
+                    userRole={userRole}
                   />
                 )}
 
@@ -255,6 +259,18 @@ export default function App() {
                     editingProperty={editingProperty}
                     setEditingProperty={setEditingProperty}
                     userEmail={userEmail}
+                  />
+                )}
+
+                {currentScreen === 'dashboard' && (
+                  <AdminDashboard 
+                    properties={properties}
+                    onEditProperty={handleEditProperty}
+                    onDeleteProperty={handleDeleteProperty}
+                    setScreen={(scr) => {
+                      setScreen(scr);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                   />
                 )}
               </>

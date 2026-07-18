@@ -4,8 +4,8 @@ import KPLogo from './KPLogo';
 import { supabase, isSupabaseConfigured } from '../supabaseClient';
 
 interface NavbarProps {
-  currentScreen: 'home' | 'listings' | 'detail' | 'upload';
-  setScreen: (screen: 'home' | 'listings' | 'detail' | 'upload') => void;
+  currentScreen: 'home' | 'listings' | 'detail' | 'upload' | 'dashboard';
+  setScreen: (screen: 'home' | 'listings' | 'detail' | 'upload' | 'dashboard') => void;
   onFilterChange?: (filters: any) => void;
   isAdmin: boolean;
   setIsAdmin: (isAdmin: boolean) => void;
@@ -46,6 +46,7 @@ export default function Navbar({
     { label: 'Commercial', screen: 'listings' as const, typeFilter: 'Commercial' },
     { label: 'Services', screen: 'home' as const, scrollId: 'why-choose' },
     { label: 'About', screen: 'home' as const, scrollId: 'why-choose' },
+    ...(isAdmin ? [{ label: 'Dashboard', screen: 'dashboard' as const }] : [])
   ];
 
   const handleNavClick = (item: typeof navItems[number]) => {
@@ -241,6 +242,9 @@ export default function Navbar({
                     <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-secondary rounded-full" />
                   )}
                   {isActive && currentScreen === 'listings' && item.screen === 'listings' && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-secondary rounded-full" />
+                  )}
+                  {isActive && currentScreen === 'dashboard' && (
                     <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-secondary rounded-full" />
                   )}
                 </button>

@@ -17,9 +17,33 @@ function getYouTubeId(url?: string): string | null {
 interface DetailViewProps {
   property: Property;
   onBack: () => void;
+  isAdmin: boolean;
+  userEmail: string | null;
+  userRole: 'buyer' | 'seller' | null;
 }
 
-export default function DetailView({ property, onBack }: DetailViewProps) {
+export default function DetailView({ 
+  property, 
+  onBack,
+  isAdmin,
+  userEmail,
+  userRole
+}: DetailViewProps) {
+  // Check if current user is authorized to see direct seller contact details
+  const canSeeSellerDetails = 
+    isAdmin || 
+    (property.agent?.sellerEmail && userEmail && property.agent.sellerEmail.toLowerCase() === userEmail.toLowerCase());
+
+  // Proxy the agent display contact details if it's a seller and the viewer is a normal user/buyer
+  const displayAgent = (property.agent?.sellerEmail && !canSeeSellerDetails)
+    ? {
+        name: 'Rohan Sharma',
+        title: 'Krishna Properties Representative',
+        image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80',
+        phone: '+91 79 1234 5678',
+        whatsapp: 'https://wa.me/917912345678'
+      }
+    : property.agent;
   const [activeTab, setActiveTab] = useState<'Schools' | 'Hospitals' | 'Malls'>('Schools');
   const [descExpanded, setDescExpanded] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -338,17 +362,17 @@ export default function DetailView({ property, onBack }: DetailViewProps) {
           <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm space-y-6">
             <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
               <img 
-                src={property.agent.image} 
-                alt={property.agent.name}
+                src={displayAgent.image} 
+                alt={displayAgent.name}
                 className="w-14 h-14 rounded-full object-cover border-2 border-brand-secondary shadow-xs"
                 referrerPolicy="no-referrer"
               />
               <div>
                 <h4 className="font-display font-bold text-base text-brand-on-surface">
-                  {property.agent.name}
+                  {displayAgent.name}
                 </h4>
                 <p className="text-xs text-brand-on-surface-variant mt-0.5">
-                  {property.agent.title}
+                  {displayAgent.title}
                 </p>
               </div>
             </div>
@@ -364,7 +388,7 @@ export default function DetailView({ property, onBack }: DetailViewProps) {
               </button>
 
               <a 
-                href={property.agent.whatsapp}
+                href={displayAgent.whatsapp}
                 target="_blank"
                 rel="noreferrer"
                 className="w-full flex items-center justify-center gap-2 bg-brand-secondary hover:bg-brand-primary text-white font-semibold py-3 text-xs rounded-lg transition-colors cursor-pointer text-center shadow-xs"
@@ -458,7 +482,7 @@ export default function DetailView({ property, onBack }: DetailViewProps) {
                   <div>
                     <h3 className="font-display font-bold text-lg">Visit Scheduled!</h3>
                     <p className="text-xs text-brand-on-surface-variant mt-1.5">
-                      Your appointment for {visitDate} at {visitTime} has been registered. {property.agent.name} will contact you shortly.
+                      Your appointment for {visitDate} at {visitTime} has been registered. {displayAgent.name} will contact you shortly.
                     </p>
                   </div>
                 </div>
@@ -792,14 +816,14 @@ export default function DetailView({ property, onBack }: DetailViewProps) {
 
               <div className="space-y-2">
                 <span className="font-mono text-[9px] uppercase tracking-widest text-brand-primary font-bold px-2 py-0.5 rounded bg-brand-primary/10">DIALING VOICE PROXY</span>
-                <h4 className="font-display font-black text-lg tracking-tight">{property.agent.name}</h4>
-                <p className="text-xs text-zinc-400 font-light">{property.agent.title}</p>
+                <h4 className="font-display font-black text-lg tracking-tight">{displayAgent.name}</h4>
+                <p className="text-xs text-zinc-400 font-light">{displayAgent.title}</p>
               </div>
 
               <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-850 space-y-1.5 text-[10px] font-mono text-zinc-400 text-left">
                 <p className="flex justify-between"><span>PROXY STATION:</span> <span className="text-brand-primary font-bold">ONLINE</span></p>
                 <p className="flex justify-between"><span>VOICE ROUTING:</span> <span className="text-white">SECURE LANDLINE</span></p>
-                <p className="flex justify-between"><span>TELEPHONE:</span> <span className="text-white">{property.agent.phone}</span></p>
+                <p className="flex justify-between"><span>TELEPHONE:</span> <span className="text-white">{displayAgent.phone}</span></p>
               </div>
 
               <div className="pt-2">
