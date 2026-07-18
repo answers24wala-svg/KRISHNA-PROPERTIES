@@ -10,6 +10,8 @@ interface ListingsViewProps {
   setSearchFilters: (filters: any) => void;
   properties: Property[];
   isAdmin: boolean;
+  userEmail: string | null;
+  userRole: 'buyer' | 'seller' | null;
   onDeleteProperty: (id: string) => void;
   onEditProperty: (property: Property) => void;
 }
@@ -21,10 +23,18 @@ export default function ListingsView({
   setSearchFilters,
   properties,
   isAdmin,
+  userEmail,
+  userRole,
   onDeleteProperty,
   onEditProperty
 }: ListingsViewProps) {
   
+  const canModify = (p: Property) => {
+    if (isAdmin) return true;
+    if (userRole === 'seller' && userEmail && p.agent?.sellerEmail === userEmail) return true;
+    return false;
+  };
+
   // Heart favorited states stored locally
   const [favorites, setFavorites] = useState<Record<string, boolean>>({
     '1': true,
@@ -533,8 +543,8 @@ export default function ListingsView({
                             <span>{compareIds.includes(p.id) ? 'Selected' : 'Compare'}</span>
                           </button>
 
-                          {/* Admin Edit/Delete overlay */}
-                          {isAdmin && (
+                          {/* Admin/Seller Edit/Delete overlay */}
+                          {canModify(p) && (
                             <div className="absolute bottom-3 right-3 flex items-center gap-1.5 z-20">
                               <button
                                 onClick={(e) => {

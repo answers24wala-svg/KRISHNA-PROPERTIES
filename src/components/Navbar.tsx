@@ -9,16 +9,30 @@ interface NavbarProps {
   onFilterChange?: (filters: any) => void;
   isAdmin: boolean;
   setIsAdmin: (isAdmin: boolean) => void;
+  userEmail: string | null;
+  setUserEmail: (email: string | null) => void;
+  userRole: 'buyer' | 'seller' | null;
+  setUserRole: (role: 'buyer' | 'seller' | null) => void;
 }
 
-export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdmin, setIsAdmin }: NavbarProps) {
+export default function Navbar({ 
+  currentScreen, 
+  setScreen, 
+  onFilterChange, 
+  isAdmin, 
+  setIsAdmin,
+  userEmail,
+  setUserEmail,
+  userRole,
+  setUserRole
+}: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [signupRole, setSignupRole] = useState<'buyer' | 'seller'>('buyer');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navItems = [
@@ -79,6 +93,7 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
               setTimeout(() => {
                 setIsAdmin(true);
                 setUserEmail('Gopalnaidu085@gmail.com');
+                setUserRole('seller');
                 setIsLoginOpen(false);
                 setLoginSuccess(false);
                 setUsername('');
@@ -90,12 +105,15 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
             return;
           }
           const email = data.user?.email || username;
+          const role = data.user?.user_metadata?.role || 'buyer';
           setLoginSuccess(true);
           setTimeout(() => {
             if (email.toLowerCase() === 'gopalnaidu085@gmail.com') {
               setIsAdmin(true);
+              setUserRole('seller');
             } else {
               setIsAdmin(false);
+              setUserRole(role);
             }
             setUserEmail(email);
             setIsLoginOpen(false);
@@ -107,6 +125,11 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
           const { error } = await supabase.auth.signUp({
             email: username,
             password: password,
+            options: {
+              data: {
+                role: signupRole
+              }
+            }
           });
           if (error) {
             setLoginError(error.message);
@@ -128,16 +151,20 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
           setTimeout(() => {
             setIsAdmin(true);
             setUserEmail('Gopalnaidu085@gmail.com');
+            setUserRole('seller');
             setIsLoginOpen(false);
             setLoginSuccess(false);
             setUsername('');
             setPassword('');
           }, 1000);
         } else {
+          // If login email contains 'seller', log in as a seller
+          const isMockSeller = username.toLowerCase().includes('seller');
           setLoginSuccess(true);
           setTimeout(() => {
             setIsAdmin(false);
             setUserEmail(username);
+            setUserRole(isMockSeller ? 'seller' : 'buyer');
             setIsLoginOpen(false);
             setLoginSuccess(false);
             setUsername('');
@@ -145,7 +172,7 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
           }, 1000);
         }
       } else {
-        alert('Sign up successful (Local Sandbox Mode)! You can now log in with these credentials.');
+        alert(`Sign up successful (Local Sandbox Mode) as ${signupRole === 'seller' ? 'Seller' : 'Buyer'}! You can now log in with these credentials.`);
         setAuthMode('login');
       }
     }
@@ -165,6 +192,7 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
     }
     setIsAdmin(false);
     setUserEmail(null);
+    setUserRole(null);
     setLogoutConfirmOpen(false);
     if (currentScreen === 'upload') {
       setScreen('home');
@@ -228,8 +256,8 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
             {isAdmin || userEmail ? (
               <div className="flex items-center gap-2 bg-brand-primary/10 border border-brand-primary/20 px-3 py-1.5 rounded-full text-xs font-semibold text-brand-primary">
                 <User className="w-3.5 h-3.5 shrink-0" />
-                <span className="truncate max-w-[120px]">
-                  {isAdmin ? 'Admin Mode' : userEmail}
+                <span className="truncate max-w-[150px]">
+                  {isAdmin ? 'Admin Mode' : `${userEmail?.split('@')[0]} (${userRole === 'seller' ? 'Seller' : 'Buyer'})`}
                 </span>
                 <button 
                   onClick={handleLogoutClick}
@@ -254,7 +282,7 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
             )}
 
             {/* List Property - visible ONLY to Admin */}
-            {isAdmin && (
+            {(isAdmin || userRole === 'seller') && (
               <button
                 onClick={() => setScreen('upload')}
                 className={`flex items-center gap-1.5 px-4.5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-md transition-all cursor-pointer ${
@@ -307,7 +335,7 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
                   <div className="flex items-center justify-between px-3 py-2 bg-brand-secondary/5 rounded-md border border-brand-secondary/10">
                     <span className="flex items-center gap-1 text-[11px] font-bold text-brand-secondary uppercase tracking-wider truncate max-w-[180px]">
                       <User className="w-3.5 h-3.5 shrink-0" />
-                      <span>{isAdmin ? 'Admin Mode Active' : userEmail}</span>
+                      <span>{isAdmin ? 'Admin Mode Active' : `${userEmail?.split('@')[0]} (${userRole === 'seller' ? 'Seller' : 'Buyer'})`}</span>
                     </span>
                     <button
                       onClick={() => { setIsOpen(false); handleLogoutClick(); }}
@@ -317,7 +345,7 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
                       <span>Log out</span>
                     </button>
                   </div>
-                  {isAdmin && (
+                  {(isAdmin || userRole === 'seller') && (
                     <button 
                       className="block w-full text-center py-2.5 text-xs font-bold uppercase tracking-wider rounded-md bg-brand-primary text-white cursor-pointer"
                       onClick={() => {
@@ -442,6 +470,38 @@ export default function Navbar({ currentScreen, setScreen, onFilterChange, isAdm
                     className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
                   />
                 </div>
+
+                {authMode === 'signup' && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-2 text-left">Register As</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setSignupRole('buyer')}
+                        className={`py-2 px-3 text-xs font-bold border rounded-lg transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                          signupRole === 'buyer'
+                            ? 'border-brand-primary bg-brand-primary/5 text-brand-primary shadow-xs'
+                            : 'border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100'
+                        }`}
+                      >
+                        <span className="font-bold">Buyer</span>
+                        <span className="text-[9px] font-light opacity-80">Buy Property</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSignupRole('seller')}
+                        className={`py-2 px-3 text-xs font-bold border rounded-lg transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                          signupRole === 'seller'
+                            ? 'border-brand-primary bg-brand-primary/5 text-brand-primary shadow-xs'
+                            : 'border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100'
+                        }`}
+                      >
+                        <span className="font-bold">Seller</span>
+                        <span className="text-[9px] font-light opacity-80">Sell Property</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <div className="pt-2 flex gap-3">
                   <button

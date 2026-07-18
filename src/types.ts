@@ -4,6 +4,7 @@ export interface PropertyAgent {
   image: string;
   phone: string;
   whatsapp: string;
+  sellerEmail?: string;
 }
 
 export interface NearbyPlace {

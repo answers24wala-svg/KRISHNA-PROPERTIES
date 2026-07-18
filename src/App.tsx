@@ -14,6 +14,7 @@ import UploadView from './components/UploadView';
 import { motion, AnimatePresence } from 'motion/react';
 import { dbService } from './dbService';
 import { Database, Wifi, WifiOff } from 'lucide-react';
+import { supabase } from './supabaseClient';
 
 export default function App() {
   // Navigation State
@@ -34,6 +35,10 @@ export default function App() {
   // Admin Mode State
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
+  // User Auth & Role States
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<'buyer' | 'seller' | null>(null);
+
   // Active property currently being edited by admin
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
 
@@ -49,6 +54,48 @@ export default function App() {
 
   useEffect(() => {
     loadProperties();
+
+    if (dbService.isLiveDb() && supabase !== null) {
+      // Get initial session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (session?.user) {
+          const email = session.user.email || null;
+          const role = session.user.user_metadata?.role || 'buyer';
+          setUserEmail(email);
+          if (email?.toLowerCase() === 'gopalnaidu085@gmail.com') {
+            setIsAdmin(true);
+            setUserRole('seller');
+          } else {
+            setIsAdmin(false);
+            setUserRole(role);
+          }
+        }
+      });
+
+      // Listen for auth state changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (session?.user) {
+          const email = session.user.email || null;
+          const role = session.user.user_metadata?.role || 'buyer';
+          setUserEmail(email);
+          if (email?.toLowerCase() === 'gopalnaidu085@gmail.com') {
+            setIsAdmin(true);
+            setUserRole('seller');
+          } else {
+            setIsAdmin(false);
+            setUserRole(role);
+          }
+        } else {
+          setUserEmail(null);
+          setUserRole(null);
+          setIsAdmin(false);
+        }
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
   }, []);
 
   // Add new property dynamically
@@ -134,6 +181,10 @@ export default function App() {
         }}
         isAdmin={isAdmin}
         setIsAdmin={setIsAdmin}
+        userEmail={userEmail}
+        setUserEmail={setUserEmail}
+        userRole={userRole}
+        setUserRole={setUserRole}
       />
 
       {/* Main Content Area with elegant fade transitions */}
@@ -176,6 +227,8 @@ export default function App() {
                     setSearchFilters={setSearchFilters}
                     properties={properties}
                     isAdmin={isAdmin}
+                    userEmail={userEmail}
+                    userRole={userRole}
                     onDeleteProperty={handleDeleteProperty}
                     onEditProperty={handleEditProperty}
                   />
@@ -201,6 +254,7 @@ export default function App() {
                     }}
                     editingProperty={editingProperty}
                     setEditingProperty={setEditingProperty}
+                    userEmail={userEmail}
                   />
                 )}
               </>

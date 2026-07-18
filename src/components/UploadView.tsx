@@ -11,6 +11,7 @@ interface UploadViewProps {
   setScreen: (screen: 'home' | 'listings' | 'detail' | 'upload') => void;
   editingProperty?: Property | null;
   setEditingProperty?: (prop: Property | null) => void;
+  userEmail: string | null;
 }
 
 export default function UploadView({ 
@@ -18,7 +19,8 @@ export default function UploadView({
   onUpdateProperty, 
   setScreen, 
   editingProperty, 
-  setEditingProperty 
+  setEditingProperty,
+  userEmail
 }: UploadViewProps) {
   // Form input states pre-populated for editing if active
   const [title, setTitle] = useState(editingProperty?.title || '');
@@ -171,7 +173,8 @@ export default function UploadView({
           ...editingProperty.agent,
           name: ownerName,
           phone: phoneNumber,
-          whatsapp: `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}`
+          whatsapp: `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}`,
+          sellerEmail: editingProperty.agent?.sellerEmail || userEmail || undefined
         }
       };
       
@@ -185,7 +188,8 @@ export default function UploadView({
         title: 'Property Owner (Direct Listing)',
         image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80',
         phone: phoneNumber,
-        whatsapp: `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}`
+        whatsapp: `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}`,
+        sellerEmail: userEmail || undefined
       };
 
       const newProp: Property = {
