@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { Property, PropertyAgent } from '../types';
 import { motion } from 'motion/react';
+import { gopalNaiduPhoto } from '../assets/gopalNaiduBase64';
 
 interface UploadViewProps {
   onAddProperty: (newProperty: Property) => void;
@@ -37,8 +38,8 @@ export default function UploadView({
   const [parking, setParking] = useState(editingProperty?.parking ?? 0);
 
   // Contact Info
-  const [ownerName, setOwnerName] = useState(editingProperty?.agent?.name || '');
-  const [phoneNumber, setPhoneNumber] = useState(editingProperty?.agent?.phone || '');
+  const [ownerName, setOwnerName] = useState(editingProperty?.agent?.name || 'Gopal Naidu');
+  const [phoneNumber, setPhoneNumber] = useState(editingProperty?.agent?.phone || '9638177321');
 
   // Media upload simulation
   const [uploadedImages, setUploadedImages] = useState<string[]>(editingProperty?.images || []);
@@ -174,6 +175,7 @@ export default function UploadView({
           name: ownerName,
           phone: phoneNumber,
           whatsapp: `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}`,
+          image: ownerName === 'Gopal Naidu' ? gopalNaiduPhoto : (editingProperty.agent?.image || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80'),
           sellerEmail: editingProperty.agent?.sellerEmail || userEmail || undefined
         }
       };
@@ -186,7 +188,7 @@ export default function UploadView({
       const agentObj: PropertyAgent = {
         name: ownerName,
         title: 'Property Owner (Direct Listing)',
-        image: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80',
+        image: ownerName === 'Gopal Naidu' ? gopalNaiduPhoto : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80',
         phone: phoneNumber,
         whatsapp: `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}`,
         sellerEmail: userEmail || undefined

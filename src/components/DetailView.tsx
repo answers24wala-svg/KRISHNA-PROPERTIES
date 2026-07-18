@@ -6,6 +6,7 @@ import {
 import { Property, NearbyPlace } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import PropertyMap from './PropertyMap';
+import { gopalNaiduPhoto } from '../assets/gopalNaiduBase64';
 
 function getYouTubeId(url?: string): string | null {
   if (!url) return null;
@@ -34,16 +35,16 @@ export default function DetailView({
     isAdmin || 
     (property.agent?.sellerEmail && userEmail && property.agent.sellerEmail.toLowerCase() === userEmail.toLowerCase());
 
-  // Proxy the agent display contact details if it's a seller and the viewer is a normal user/buyer
-  const displayAgent = (property.agent?.sellerEmail && !canSeeSellerDetails)
-    ? {
-        name: 'Rohan Sharma',
+  // Proxy the agent display contact details if the viewer is a normal user/buyer
+  const displayAgent = canSeeSellerDetails
+    ? property.agent
+    : {
+        name: 'Gopal Naidu',
         title: 'Krishna Properties Representative',
-        image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80',
-        phone: '+91 79 1234 5678',
-        whatsapp: 'https://wa.me/917912345678'
-      }
-    : property.agent;
+        image: gopalNaiduPhoto,
+        phone: '9638177321',
+        whatsapp: 'https://wa.me/919638177321'
+      };
   const [activeTab, setActiveTab] = useState<'Schools' | 'Hospitals' | 'Malls'>('Schools');
   const [descExpanded, setDescExpanded] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -826,16 +827,27 @@ export default function DetailView({
                 <p className="flex justify-between"><span>TELEPHONE:</span> <span className="text-white">{displayAgent.phone}</span></p>
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 flex gap-3">
                 <button
                   onClick={() => {
                     setCallContactOpen(false);
                     showToast('Voice Proxy call terminated safely.', 'info');
                   }}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-wider py-3 rounded-lg transition-colors cursor-pointer shadow-sm"
+                  className="flex-grow bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold uppercase tracking-wider py-3 rounded-lg transition-colors cursor-pointer shadow-sm"
                 >
-                  End Voice Link
+                  Cancel
                 </button>
+                <a
+                  href={`tel:${displayAgent.phone}`}
+                  onClick={() => {
+                    setCallContactOpen(false);
+                    showToast('Initiating secure direct call...', 'success');
+                  }}
+                  className="flex-grow bg-brand-primary hover:bg-black text-white text-xs font-bold uppercase tracking-wider py-3 rounded-lg transition-colors cursor-pointer shadow-sm flex items-center justify-center gap-1.5"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>Call Now</span>
+                </a>
               </div>
 
             </motion.div>
