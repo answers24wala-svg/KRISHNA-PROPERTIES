@@ -53,6 +53,15 @@ export default function App() {
     setIsLoading(false);
   };
 
+  const syncUserProfile = async (id: string, email: string | null, role: string) => {
+    if (!dbService.isLiveDb() || !supabase || !email) return;
+    try {
+      await supabase.from('profiles').upsert({ id, email, role });
+    } catch (err) {
+      console.error('Error syncing profile:', err);
+    }
+  };
+
   useEffect(() => {
     loadProperties();
 
@@ -66,9 +75,11 @@ export default function App() {
           if (email?.toLowerCase() === 'gopalnaidu085@gmail.com') {
             setIsAdmin(true);
             setUserRole('seller');
+            syncUserProfile(session.user.id, email, 'seller');
           } else {
             setIsAdmin(false);
             setUserRole(role);
+            syncUserProfile(session.user.id, email, role);
           }
         }
       });
@@ -82,9 +93,11 @@ export default function App() {
           if (email?.toLowerCase() === 'gopalnaidu085@gmail.com') {
             setIsAdmin(true);
             setUserRole('seller');
+            syncUserProfile(session.user.id, email, 'seller');
           } else {
             setIsAdmin(false);
             setUserRole(role);
+            syncUserProfile(session.user.id, email, role);
           }
         } else {
           setUserEmail(null);

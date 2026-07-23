@@ -1,6 +1,14 @@
-import { useMemo } from 'react';
-import { Building, IndianRupee, Users, PlusCircle, Edit, Trash2, ArrowLeft } from 'lucide-react';
+import { useMemo, useState, useEffect } from 'react';
+import { Building, IndianRupee, Users, PlusCircle, Edit, Trash2, ArrowLeft, Search } from 'lucide-react';
 import { Property } from '../types';
+import { supabase } from '../supabaseClient';
+
+interface UserProfile {
+  id: string;
+  email: string;
+  role: string;
+  created_at: string;
+}
 
 interface AdminDashboardProps {
   properties: Property[];
@@ -15,6 +23,45 @@ export default function AdminDashboard({
   onDeleteProperty,
   setScreen
 }: AdminDashboardProps) {
+
+  const [activeTab, setActiveTab] = useState<'listings' | 'users'>('listings');
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
+
+  // Fetch profiles list on mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!supabase) {
+        setUsersLoading(false);
+        return;
+      }
+      try {
+        setUsersLoading(true);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!error && data) {
+          setUsers(data);
+        }
+      } catch (err) {
+        console.error('Error fetching users:', err);
+      } finally {
+        setUsersLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
+
+  // Filter users by search term
+  const filteredUsers = useMemo(() => {
+    return users.filter(u => 
+      u.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      u.role.toLowerCase().includes(userSearchTerm.toLowerCase())
+    );
+  }, [users, userSearchTerm]);
 
   // 1. Compute Stats
   const stats = useMemo(() => {
@@ -127,109 +174,210 @@ export default function AdminDashboard({
         </div>
       </div>
 
-      {/* Main Layout Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Contributor list (left 1/3) */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-xs space-y-5 lg:col-span-1">
-          <h2 className="font-display font-black text-base uppercase tracking-wider text-brand-on-surface">Listing Contributors</h2>
-          <div className="divide-y divide-gray-100 max-h-[400px] overflow-y-auto pr-1">
-            {stats.sellerGroups.map((contributor) => (
-              <div key={contributor.email} className="py-3 flex items-center justify-between text-xs">
-                <span className="font-semibold text-brand-on-surface truncate pr-2 max-w-[200px]" title={contributor.email}>
-                  {contributor.email}
-                </span>
-                <span className="px-2.5 py-1 bg-gray-50 text-gray-600 font-bold rounded-full border border-gray-100 shrink-0">
-                  {contributor.count} {contributor.count === 1 ? 'listing' : 'listings'}
-                </span>
-              </div>
-            ))}
-            {stats.sellerGroups.length === 0 && (
-              <p className="text-xs text-gray-400 text-center py-6">No contributors found.</p>
-            )}
-          </div>
-        </div>
+      {/* Navigation Tabs (Listings vs Users) */}
+      <div className="flex border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('listings')}
+          className={`py-3.5 px-6 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+            activeTab === 'listings'
+              ? 'border-brand-primary text-brand-primary'
+              : 'border-transparent text-gray-400 hover:text-gray-600'
+          }`}
+        >
+          Manage Listings ({stats.totalListings})
+        </button>
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`py-3.5 px-6 text-xs font-bold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+            activeTab === 'users'
+              ? 'border-brand-primary text-brand-primary'
+              : 'border-transparent text-gray-400 hover:text-gray-600'
+          }`}
+        >
+          Registered Users ({users.length})
+        </button>
+      </div>
 
-        {/* Listings Control Table (right 2/3) */}
-        <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-xs space-y-5 lg:col-span-2 overflow-hidden flex flex-col">
-          <h2 className="font-display font-black text-base uppercase tracking-wider text-brand-on-surface">Database Listings Control</h2>
-          <div className="overflow-x-auto -mx-6">
-            <div className="inline-block min-w-full align-middle px-6">
-              <table className="min-w-full divide-y divide-gray-150 text-left">
-                <thead>
-                  <tr className="text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest">
-                    <th scope="col" className="pb-3 pr-4">Property</th>
-                    <th scope="col" className="pb-3 px-4">Price</th>
-                    <th scope="col" className="pb-3 px-4">Type</th>
-                    <th scope="col" className="pb-3 px-4">Added By</th>
-                    <th scope="col" className="pb-3 pl-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 text-xs">
-                  {properties.map((p) => {
-                    const addedBy = p.agent?.sellerEmail || 'Admin';
-                    return (
-                      <tr key={p.id} className="hover:bg-brand-surface-container/30 transition-colors">
-                        <td className="py-3.5 pr-4 flex items-center gap-3">
-                          <img
-                            src={p.images[0] || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6'}
-                            alt={p.title}
-                            className="w-10 h-10 object-cover rounded-lg border border-gray-100 shrink-0"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="min-w-0">
-                            <span className="font-bold block text-brand-on-surface truncate max-w-[150px] sm:max-w-[200px]" title={p.title}>
-                              {p.title}
-                            </span>
-                            <span className="text-[10px] text-gray-400 truncate block max-w-[150px]" title={p.location}>
-                              {p.location}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-4 font-bold text-brand-secondary">{p.priceFormatted}</td>
-                        <td className="py-3.5 px-4 text-brand-on-surface-variant">{p.propertyType}</td>
-                        <td className="py-3.5 px-4 text-brand-on-surface-variant truncate max-w-[100px]" title={addedBy}>
-                          {addedBy === 'gopalnaidu085@gmail.com' ? 'Admin' : addedBy}
-                        </td>
-                        <td className="py-3.5 pl-4 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => onEditProperty(p)}
-                              className="p-1.5 rounded-md hover:bg-brand-secondary/15 text-brand-secondary transition-colors cursor-pointer"
-                              title="Edit Listing"
-                            >
-                              <Edit className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (confirm(`Are you sure you want to permanently delete listing "${p.title}"?`)) {
-                                  onDeleteProperty(p.id);
-                                }
-                              }}
-                              className="p-1.5 rounded-md hover:bg-red-50 text-red-600 transition-colors cursor-pointer"
-                              title="Delete Listing"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {properties.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="py-8 text-center text-gray-400">
-                        No property listings found in the database.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+      {activeTab === 'listings' ? (
+        /* Main Layout Grid */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Contributor list (left 1/3) */}
+          <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-xs space-y-5 lg:col-span-1">
+            <h2 className="font-display font-black text-base uppercase tracking-wider text-brand-on-surface">Listing Contributors</h2>
+            <div className="divide-y divide-gray-100 max-h-[400px] overflow-y-auto pr-1">
+              {stats.sellerGroups.map((contributor) => (
+                <div key={contributor.email} className="py-3 flex items-center justify-between text-xs">
+                  <span className="font-semibold text-brand-on-surface truncate pr-2 max-w-[200px]" title={contributor.email}>
+                    {contributor.email}
+                  </span>
+                  <span className="px-2.5 py-1 bg-gray-50 text-gray-600 font-bold rounded-full border border-gray-100 shrink-0">
+                    {contributor.count} {contributor.count === 1 ? 'listing' : 'listings'}
+                  </span>
+                </div>
+              ))}
+              {stats.sellerGroups.length === 0 && (
+                <p className="text-xs text-gray-400 text-center py-6">No contributors found.</p>
+              )}
             </div>
           </div>
-        </div>
 
-      </div>
+          {/* Listings Control Table (right 2/3) */}
+          <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-xs space-y-5 lg:col-span-2 overflow-hidden flex flex-col">
+            <h2 className="font-display font-black text-base uppercase tracking-wider text-brand-on-surface">Database Listings Control</h2>
+            <div className="overflow-x-auto -mx-6">
+              <div className="inline-block min-w-full align-middle px-6">
+                <table className="min-w-full divide-y divide-gray-150 text-left">
+                  <thead>
+                    <tr className="text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest">
+                      <th scope="col" className="pb-3 pr-4">Property</th>
+                      <th scope="col" className="pb-3 px-4">Price</th>
+                      <th scope="col" className="pb-3 px-4">Type</th>
+                      <th scope="col" className="pb-3 px-4">Added By</th>
+                      <th scope="col" className="pb-3 pl-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 text-xs">
+                    {properties.map((p) => {
+                      const addedBy = p.agent?.sellerEmail || 'Admin';
+                      return (
+                        <tr key={p.id} className="hover:bg-brand-surface-container/30 transition-colors">
+                          <td className="py-3.5 pr-4 flex items-center gap-3">
+                            <img
+                              src={p.images[0] || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6'}
+                              alt={p.title}
+                              className="w-10 h-10 object-cover rounded-lg border border-gray-100 shrink-0"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="min-w-0">
+                              <span className="font-bold block text-brand-on-surface truncate max-w-[150px] sm:max-w-[200px]" title={p.title}>
+                                {p.title}
+                              </span>
+                              <span className="text-[10px] text-gray-400 truncate block max-w-[150px]" title={p.location}>
+                                {p.location}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 font-bold text-brand-secondary">{p.priceFormatted}</td>
+                          <td className="py-3.5 px-4 text-brand-on-surface-variant">{p.propertyType}</td>
+                          <td className="py-3.5 px-4 text-brand-on-surface-variant truncate max-w-[100px]" title={addedBy}>
+                            {addedBy === 'gopalnaidu085@gmail.com' ? 'Admin' : addedBy}
+                          </td>
+                          <td className="py-3.5 pl-4 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => onEditProperty(p)}
+                                className="p-1.5 rounded-md hover:bg-brand-secondary/15 text-brand-secondary transition-colors cursor-pointer"
+                                title="Edit Listing"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm(`Are you sure you want to permanently delete listing "${p.title}"?`)) {
+                                    onDeleteProperty(p.id);
+                                  }
+                                }}
+                                className="p-1.5 rounded-md hover:bg-red-50 text-red-600 transition-colors cursor-pointer"
+                                title="Delete Listing"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {properties.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-gray-400">
+                          No property listings found in the database.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      ) : (
+        /* Users Directory Grid */
+        <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <h2 className="font-display font-black text-base uppercase tracking-wider text-brand-on-surface">Registered Users Directory</h2>
+            
+            {/* User Search Input */}
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search user by email or role..."
+                value={userSearchTerm}
+                onChange={(e) => setUserSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-primary focus:bg-white transition-all"
+              />
+            </div>
+          </div>
+
+          {usersLoading ? (
+            <div className="text-center py-12 text-brand-on-surface-variant animate-pulse font-medium text-xs">
+              Retrieving users from Supabase...
+            </div>
+          ) : (
+            <div className="overflow-x-auto -mx-6">
+              <div className="inline-block min-w-full align-middle px-6">
+                <table className="min-w-full divide-y divide-gray-150 text-left">
+                  <thead>
+                    <tr className="text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest">
+                      <th scope="col" className="pb-3 pr-4">User Email</th>
+                      <th scope="col" className="pb-3 px-4">User ID</th>
+                      <th scope="col" className="pb-3 px-4">Account Role</th>
+                      <th scope="col" className="pb-3 pl-4 text-right">Joined Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 text-xs">
+                    {filteredUsers.map((u) => (
+                      <tr key={u.id} className="hover:bg-brand-surface-container/30 transition-colors">
+                        <td className="py-4 pr-4 font-bold text-brand-on-surface">{u.email}</td>
+                        <td className="py-4 px-4 font-mono text-[10px] text-gray-400">{u.id}</td>
+                        <td className="py-4 px-4">
+                          <span className={`px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider rounded-full border ${
+                            u.role === 'seller'
+                              ? 'bg-purple-50 text-purple-600 border-purple-100'
+                              : u.role === 'admin'
+                              ? 'bg-red-50 text-red-600 border-red-100'
+                              : 'bg-blue-50 text-blue-600 border-blue-100'
+                          }`}>
+                            {u.role}
+                          </span>
+                        </td>
+                        <td className="py-4 pl-4 text-right text-brand-on-surface-variant">
+                          {new Date(u.created_at).toLocaleDateString('en-IN', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredUsers.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="py-8 text-center text-gray-400">
+                          No users matched your query.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
     </div>
   );
