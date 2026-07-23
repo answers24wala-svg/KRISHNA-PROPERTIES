@@ -6,7 +6,6 @@ import {
 import { Property, NearbyPlace } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import PropertyMap from './PropertyMap';
-import { gopalNaiduPhoto } from '../assets/gopalNaiduBase64';
 
 function getYouTubeId(url?: string): string | null {
   if (!url) return null;
@@ -41,7 +40,7 @@ export default function DetailView({
     : {
         name: 'Gopal Naidu',
         title: 'Krishna Properties Representative',
-        image: gopalNaiduPhoto,
+        image: '/gopal_naidu.jpg',
         phone: '9638177321',
         whatsapp: 'https://wa.me/919638177321'
       };
