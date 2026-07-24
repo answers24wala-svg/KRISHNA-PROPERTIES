@@ -19,7 +19,7 @@ import { supabase } from './supabaseClient';
 
 export default function App() {
   // Navigation State
-  const [currentScreen, setScreen] = useState<'home' | 'listings' | 'detail' | 'upload' | 'dashboard'>('home');
+  const [currentScreen, setRawScreen] = useState<'home' | 'listings' | 'detail' | 'upload' | 'dashboard'>('home');
   
   // Real-time properties list state (fetched dynamically!)
   const [properties, setProperties] = useState<Property[]>([]);
@@ -42,6 +42,21 @@ export default function App() {
 
   // Active property currently being edited by admin
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+
+  const [triggerSellerLoginCounter, setTriggerSellerLoginCounter] = useState<number>(0);
+
+  const setScreen = (scr: 'home' | 'listings' | 'detail' | 'upload' | 'dashboard') => {
+    if (scr === 'upload') {
+      const isLogged = !!userEmail;
+      const isSellerOrAdmin = userRole === 'seller' || isAdmin;
+      if (!isLogged || !isSellerOrAdmin) {
+        alert("Please sign up or log in as a Seller to list properties.");
+        setTriggerSellerLoginCounter(prev => prev + 1);
+        return;
+      }
+    }
+    setRawScreen(scr);
+  };
 
   // Load properties dynamically
   const loadProperties = async () => {
@@ -201,6 +216,7 @@ export default function App() {
         setUserEmail={setUserEmail}
         userRole={userRole}
         setUserRole={setUserRole}
+        triggerSellerLoginCounter={triggerSellerLoginCounter}
       />
 
       {/* Main Content Area with elegant fade transitions */}

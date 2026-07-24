@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { MapPin, Menu, X, PlusCircle, Lock, LogOut, CheckCircle2, User } from 'lucide-react';
 import KPLogo from './KPLogo';
 import { supabase, isSupabaseConfigured } from '../supabaseClient';
@@ -13,6 +13,7 @@ interface NavbarProps {
   setUserEmail: (email: string | null) => void;
   userRole: 'buyer' | 'seller' | null;
   setUserRole: (role: 'buyer' | 'seller' | null) => void;
+  triggerSellerLoginCounter?: number;
 }
 
 interface MockUser {
@@ -32,7 +33,8 @@ export default function Navbar({
   userEmail,
   setUserEmail,
   userRole,
-  setUserRole
+  setUserRole,
+  triggerSellerLoginCounter
 }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -44,6 +46,14 @@ export default function Navbar({
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (triggerSellerLoginCounter && triggerSellerLoginCounter > 0) {
+      setAuthMode('signup');
+      setSignupRole('seller');
+      setIsLoginOpen(true);
+    }
+  }, [triggerSellerLoginCounter]);
 
   const navItems = [
     { label: 'Home', screen: 'home' as const },
@@ -163,6 +173,10 @@ export default function Navbar({
           }, 1000);
         } else {
           // Sign Up mode
+          if (!phone.trim()) {
+            setLoginError("Phone number is required to register an account.");
+            return;
+          }
           const { error } = await supabase.auth.signUp({
             email: username,
             password: password,
@@ -238,6 +252,10 @@ export default function Navbar({
         }, 1000);
       } else {
         // Sign Up in local sandbox
+        if (!phone.trim()) {
+          setLoginError("Phone number is required to register an account.");
+          return;
+        }
         mockUserDb[username.toLowerCase()] = {
           email: username,
           phone: phone,
