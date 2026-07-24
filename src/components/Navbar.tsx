@@ -15,8 +15,13 @@ interface NavbarProps {
   setUserRole: (role: 'buyer' | 'seller' | null) => void;
 }
 
+interface MockUser {
+  email: string;
+  phone: string;
+  role: 'buyer' | 'seller';
+}
 // Memory store to persist local sandbox registration roles across logins
-const mockUserDb: Record<string, 'buyer' | 'seller'> = {};
+const mockUserDb: Record<string, MockUser> = {};
 
 export default function Navbar({ 
   currentScreen, 
@@ -37,6 +42,7 @@ export default function Navbar({
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [signupRole, setSignupRole] = useState<'buyer' | 'seller'>('buyer');
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navItems = [
@@ -83,12 +89,39 @@ export default function Navbar({
     // Check credentials locally first as bypass for sandboxes
     const isAdminCreds = username.toLowerCase() === 'gopalnaidu085@gmail.com' && password === 'Naidu@gopal#2207';
 
+    let resolvedEmail = username;
+
     if (isSupabaseConfigured && supabase !== null) {
       setIsSubmitting(true);
       try {
         if (authMode === 'login') {
+          // If login identifier doesn't have '@', we assume it's a phone number and query profiles
+          if (!username.includes('@')) {
+            const { data: profile, error: profileErr } = await supabase
+              .from('profiles')
+              .select('email')
+              .eq('phone', username)
+              .maybeSingle();
+
+            if (profileErr || !profile) {
+              // Try mock DB lookup first just in case
+              const mockUser = Object.values(mockUserDb).find(u => u.phone === username);
+              if (mockUser) {
+                resolvedEmail = mockUser.email;
+              } else if (isAdminCreds) {
+                resolvedEmail = 'Gopalnaidu085@gmail.com';
+              } else {
+                setLoginError("No account registered with this phone number.");
+                setIsSubmitting(false);
+                return;
+              }
+            } else {
+              resolvedEmail = profile.email;
+            }
+          }
+
           const { data, error } = await supabase.auth.signInWithPassword({
-            email: username,
+            email: resolvedEmail,
             password: password,
           });
           if (error) {
@@ -103,13 +136,14 @@ export default function Navbar({
                 setLoginSuccess(false);
                 setUsername('');
                 setPassword('');
+                setPhone('');
               }, 1000);
               return;
             }
             setLoginError(error.message);
             return;
           }
-          const email = data.user?.email || username;
+          const email = data.user?.email || resolvedEmail;
           const role = data.user?.user_metadata?.role || 'buyer';
           setLoginSuccess(true);
           setTimeout(() => {
@@ -125,14 +159,17 @@ export default function Navbar({
             setLoginSuccess(false);
             setUsername('');
             setPassword('');
+            setPhone('');
           }, 1000);
         } else {
+          // Sign Up mode
           const { error } = await supabase.auth.signUp({
             email: username,
             password: password,
             options: {
               data: {
-                role: signupRole
+                role: signupRole,
+                phone: phone
               }
             }
           });
@@ -140,7 +177,11 @@ export default function Navbar({
             setLoginError(error.message);
             return;
           }
-          mockUserDb[username.toLowerCase()] = signupRole;
+          mockUserDb[username.toLowerCase()] = {
+            email: username,
+            phone: phone,
+            role: signupRole
+          };
           setSignupSuccess(true);
         }
       } catch (err: any) {
@@ -151,6 +192,7 @@ export default function Navbar({
     } else {
       // Local sandbox logic
       if (authMode === 'login') {
+        let userRoleObj: 'buyer' | 'seller' = 'buyer';
         if (isAdminCreds) {
           setLoginSuccess(true);
           setTimeout(() => {
@@ -161,23 +203,46 @@ export default function Navbar({
             setLoginSuccess(false);
             setUsername('');
             setPassword('');
+            setPhone('');
           }, 1000);
-        } else {
-          // Look up in mock database
-          const role = mockUserDb[username.toLowerCase()] || (username.toLowerCase().includes('seller') ? 'seller' : 'buyer');
-          setLoginSuccess(true);
-          setTimeout(() => {
-            setIsAdmin(false);
-            setUserEmail(username);
-            setUserRole(role);
-            setIsLoginOpen(false);
-            setLoginSuccess(false);
-            setUsername('');
-            setPassword('');
-          }, 1000);
+          return;
         }
+
+        // Look up by email or phone in mock database
+        let foundUser: MockUser | undefined;
+        if (username.includes('@')) {
+          foundUser = mockUserDb[username.toLowerCase()];
+        } else {
+          foundUser = Object.values(mockUserDb).find(u => u.phone === username);
+        }
+
+        if (foundUser) {
+          resolvedEmail = foundUser.email;
+          userRoleObj = foundUser.role;
+        } else {
+          // fallback auto-generation if not found
+          resolvedEmail = username;
+          userRoleObj = username.toLowerCase().includes('seller') ? 'seller' : 'buyer';
+        }
+
+        setLoginSuccess(true);
+        setTimeout(() => {
+          setIsAdmin(false);
+          setUserEmail(resolvedEmail);
+          setUserRole(userRoleObj);
+          setIsLoginOpen(false);
+          setLoginSuccess(false);
+          setUsername('');
+          setPassword('');
+          setPhone('');
+        }, 1000);
       } else {
-        mockUserDb[username.toLowerCase()] = signupRole;
+        // Sign Up in local sandbox
+        mockUserDb[username.toLowerCase()] = {
+          email: username,
+          phone: phone,
+          role: signupRole
+        };
         setSignupSuccess(true);
       }
     }
@@ -483,13 +548,15 @@ export default function Navbar({
                 )}
 
                 <div>
-                  <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">Email Address</label>
+                  <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">
+                    {authMode === 'login' ? 'Email or Phone Number' : 'Email Address'}
+                  </label>
                   <input
-                    type="email"
+                    type={authMode === 'login' ? 'text' : 'email'}
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="name@example.com"
+                    placeholder={authMode === 'login' ? 'e.g. name@example.com or 9638177321' : 'name@example.com'}
                     className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
                   />
                 </div>
@@ -505,6 +572,20 @@ export default function Navbar({
                     className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
                   />
                 </div>
+
+                {authMode === 'signup' && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">Phone Number</label>
+                    <input
+                      type="tel"
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="e.g. 9638177321"
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
+                    />
+                  </div>
+                )}
 
                 {authMode === 'signup' && (
                   <div>

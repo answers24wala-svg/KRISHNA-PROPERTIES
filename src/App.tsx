@@ -53,10 +53,10 @@ export default function App() {
     setIsLoading(false);
   };
 
-  const syncUserProfile = async (id: string, email: string | null, role: string) => {
+  const syncUserProfile = async (id: string, email: string | null, role: string, phone?: string) => {
     if (!dbService.isLiveDb() || !supabase || !email) return;
     try {
-      await supabase.from('profiles').upsert({ id, email, role });
+      await supabase.from('profiles').upsert({ id, email, role, phone });
     } catch (err) {
       console.error('Error syncing profile:', err);
     }
@@ -71,15 +71,16 @@ export default function App() {
         if (session?.user) {
           const email = session.user.email || null;
           const role = session.user.user_metadata?.role || 'buyer';
+          const phone = session.user.user_metadata?.phone || undefined;
           setUserEmail(email);
           if (email?.toLowerCase() === 'gopalnaidu085@gmail.com') {
             setIsAdmin(true);
             setUserRole('seller');
-            syncUserProfile(session.user.id, email, 'seller');
+            syncUserProfile(session.user.id, email, 'seller', phone);
           } else {
             setIsAdmin(false);
             setUserRole(role);
-            syncUserProfile(session.user.id, email, role);
+            syncUserProfile(session.user.id, email, role, phone);
           }
         }
       });
@@ -89,15 +90,16 @@ export default function App() {
         if (session?.user) {
           const email = session.user.email || null;
           const role = session.user.user_metadata?.role || 'buyer';
+          const phone = session.user.user_metadata?.phone || undefined;
           setUserEmail(email);
           if (email?.toLowerCase() === 'gopalnaidu085@gmail.com') {
             setIsAdmin(true);
             setUserRole('seller');
-            syncUserProfile(session.user.id, email, 'seller');
+            syncUserProfile(session.user.id, email, 'seller', phone);
           } else {
             setIsAdmin(false);
             setUserRole(role);
-            syncUserProfile(session.user.id, email, role);
+            syncUserProfile(session.user.id, email, role, phone);
           }
         } else {
           setUserEmail(null);
