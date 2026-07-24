@@ -2,7 +2,7 @@ import { Globe, Twitter, Instagram, Linkedin, Mail } from 'lucide-react';
 import { useState, FormEvent } from 'react';
 
 interface FooterProps {
-  setScreen: (screen: 'home' | 'listings' | 'detail' | 'upload' | 'dashboard' | 'privacy') => void;
+  setScreen: (screen: 'home' | 'listings' | 'detail' | 'upload' | 'dashboard' | 'privacy' | 'terms') => void;
   onSelectLocality?: (locality: string) => void;
 }
 
@@ -69,9 +69,15 @@ export default function Footer({ setScreen, onSelectLocality }: FooterProps) {
                 </button>
               </li>
               <li>
-                <a href="#" onClick={(e) => { e.preventDefault(); alert('Terms of Service agreement'); }} className="hover:text-brand-secondary hover:underline transition-all">
+                <button 
+                  onClick={() => {
+                    setScreen('terms');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }} 
+                  className="hover:text-brand-secondary cursor-pointer hover:underline transition-all text-left"
+                >
                   Terms of Service
-                </a>
+                </button>
               </li>
               <li>
                 <button 

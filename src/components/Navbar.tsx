@@ -4,8 +4,8 @@ import KPLogo from './KPLogo';
 import { supabase, isSupabaseConfigured } from '../supabaseClient';
 
 interface NavbarProps {
-  currentScreen: 'home' | 'listings' | 'detail' | 'upload' | 'dashboard' | 'privacy';
-  setScreen: (screen: 'home' | 'listings' | 'detail' | 'upload' | 'dashboard' | 'privacy') => void;
+  currentScreen: 'home' | 'listings' | 'detail' | 'upload' | 'dashboard' | 'privacy' | 'terms';
+  setScreen: (screen: 'home' | 'listings' | 'detail' | 'upload' | 'dashboard' | 'privacy' | 'terms') => void;
   onFilterChange?: (filters: any) => void;
   isAdmin: boolean;
   setIsAdmin: (isAdmin: boolean) => void;

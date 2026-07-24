@@ -13,6 +13,7 @@ import DetailView from './components/DetailView';
 import UploadView from './components/UploadView';
 import AdminDashboard from './components/AdminDashboard';
 import PrivacyPolicyView from './components/PrivacyPolicyView';
+import TermsView from './components/TermsView';
 import { motion, AnimatePresence } from 'motion/react';
 import { dbService } from './dbService';
 import { Database, Wifi, WifiOff } from 'lucide-react';
@@ -20,7 +21,7 @@ import { supabase } from './supabaseClient';
 
 export default function App() {
   // Navigation State
-  const [currentScreen, setRawScreen] = useState<'home' | 'listings' | 'detail' | 'upload' | 'dashboard' | 'privacy'>('home');
+  const [currentScreen, setRawScreen] = useState<'home' | 'listings' | 'detail' | 'upload' | 'dashboard' | 'privacy' | 'terms'>('home');
   
   // Real-time properties list state (fetched dynamically!)
   const [properties, setProperties] = useState<Property[]>([]);
@@ -46,7 +47,7 @@ export default function App() {
 
   const [triggerSellerLoginCounter, setTriggerSellerLoginCounter] = useState<number>(0);
 
-  const setScreen = (scr: 'home' | 'listings' | 'detail' | 'upload' | 'dashboard' | 'privacy') => {
+  const setScreen = (scr: 'home' | 'listings' | 'detail' | 'upload' | 'dashboard' | 'privacy' | 'terms') => {
     if (scr === 'upload') {
       const isLogged = !!userEmail;
       const isSellerOrAdmin = userRole === 'seller' || isAdmin;
@@ -308,6 +309,12 @@ export default function App() {
 
                 {currentScreen === 'privacy' && (
                   <PrivacyPolicyView 
+                    onBack={() => setScreen('home')} 
+                  />
+                )}
+
+                {currentScreen === 'terms' && (
+                  <TermsView 
                     onBack={() => setScreen('home')} 
                   />
                 )}
