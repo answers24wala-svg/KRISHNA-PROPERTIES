@@ -310,7 +310,7 @@ export default function ListingsView({
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="e.g. Prahlad Nagar"
+                placeholder="e.g. Narol"
                 value={areaSearch}
                 onChange={(e) => setAreaSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2.5 bg-brand-surface border border-gray-200 rounded-md text-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-1 focus:ring-brand-secondary text-brand-on-surface"

@@ -29,7 +29,7 @@ export default function Footer({ setScreen, onSelectLocality }: FooterProps) {
   return (
     <footer className="bg-brand-surface-container-low border-t border-gray-100 text-brand-on-surface pt-16 pb-8">
       <div className="max-w-(--size-container-max) mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-12 border-b border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-12 border-b border-gray-200">
           
           {/* Logo & Info */}
           <div className="space-y-4">
@@ -87,7 +87,7 @@ export default function Footer({ setScreen, onSelectLocality }: FooterProps) {
               Localities
             </h3>
             <ul className="space-y-2.5 text-sm text-brand-on-surface-variant">
-              {['Prahlad Nagar', 'Satellite', 'South Bopal', 'Bodakdev'].map((locality) => (
+              {['CTM', 'Narol', 'Lambha', 'Isanpur', 'Maninagar'].map((locality) => (
                 <li key={locality}>
                   <button 
                     onClick={() => handleLocalityClick(locality)}
@@ -98,34 +98,6 @@ export default function Footer({ setScreen, onSelectLocality }: FooterProps) {
                 </li>
               ))}
             </ul>
-          </div>
-
-          {/* Newsletter */}
-          <div>
-            <h3 className="font-display text-sm font-bold text-brand-on-surface uppercase tracking-wider mb-4">
-              Newsletter
-            </h3>
-            <p className="text-sm text-brand-on-surface-variant mb-4">
-              Stay updated with the latest properties in Ahmedabad.
-            </p>
-            <form onSubmit={handleSubscribe} className="space-y-2">
-              <div className="relative">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email Address"
-                  className="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-md text-sm text-brand-on-surface placeholder:text-gray-400 focus:outline-hidden focus:ring-1 focus:ring-brand-secondary"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-brand-primary text-white hover:bg-black/95 text-sm font-semibold py-2.5 rounded-md transition-colors shadow-sm cursor-pointer"
-              >
-                {subscribed ? 'Subscribed ✓' : 'Subscribe'}
-              </button>
-            </form>
           </div>
 
         </div>

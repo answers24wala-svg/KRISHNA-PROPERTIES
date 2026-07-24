@@ -95,7 +95,7 @@ export default function HomeView({ setScreen, setSelectedPropertyId, onSearch, p
               </button>
               {locationOpen && (
                 <div className="absolute left-0 right-0 mt-1 z-50 bg-white border border-gray-100 rounded-lg shadow-lg py-1.5 text-sm">
-                  {['All Ahmedabad', 'Prahlad Nagar', 'South Bopal', 'Satellite', 'Bodakdev', 'Sindhu Bhavan'].map((loc) => (
+                  {['All Ahmedabad', 'CTM', 'Narol', 'Lambha', 'Isanpur', 'Maninagar'].map((loc) => (
                     <button
                       key={loc}
                       onClick={() => { setLocation(loc); setLocationOpen(false); }}
