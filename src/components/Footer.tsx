@@ -2,7 +2,7 @@ import { Globe, Twitter, Instagram, Linkedin, Mail } from 'lucide-react';
 import { useState, FormEvent } from 'react';
 
 interface FooterProps {
-  setScreen: (screen: 'home' | 'listings' | 'detail' | 'upload') => void;
+  setScreen: (screen: 'home' | 'listings' | 'detail' | 'upload' | 'dashboard' | 'privacy') => void;
   onSelectLocality?: (locality: string) => void;
 }
 
@@ -74,9 +74,15 @@ export default function Footer({ setScreen, onSelectLocality }: FooterProps) {
                 </a>
               </li>
               <li>
-                <a href="#" onClick={(e) => { e.preventDefault(); alert('Privacy policy document'); }} className="hover:text-brand-secondary hover:underline transition-all">
+                <button 
+                  onClick={() => {
+                    setScreen('privacy');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }} 
+                  className="hover:text-brand-secondary cursor-pointer hover:underline transition-all text-left"
+                >
                   Privacy Policy
-                </a>
+                </button>
               </li>
             </ul>
           </div>
