@@ -279,42 +279,32 @@ export default function HomeView({ setScreen, setSelectedPropertyId, onSearch, p
             {/* List entries */}
             <div className="space-y-6">
               
-              {/* Entry 1 */}
-              <div className="flex gap-4">
-                <div className="flex-none w-12 h-12 rounded-xl bg-brand-surface-container-highest flex items-center justify-center text-brand-secondary shadow-xs">
-                  <ShieldCheck className="w-6 h-6" />
+              {/* Address & Contact Entry */}
+              <div className="flex gap-4 bg-gray-50/50 p-6 rounded-2xl border border-gray-100/80">
+                <div className="flex-none w-12 h-12 rounded-xl bg-brand-primary/10 flex items-center justify-center text-brand-primary shadow-xs">
+                  <MapPin className="w-6 h-6" />
                 </div>
-                <div>
-                  <h4 className="font-display font-bold text-brand-on-surface text-base">Verified Listings</h4>
-                  <p className="text-xs sm:text-sm text-brand-on-surface-variant mt-1 leading-relaxed">
-                    Every property on our portal is Online Verified by google Map for accurate Location to guarantee accuracy and safety.
-                  </p>
-                </div>
-              </div>
-
-              {/* Entry 2 */}
-              <div className="flex gap-4">
-                <div className="flex-none w-12 h-12 rounded-xl bg-brand-surface-container-highest flex items-center justify-center text-brand-tertiary shadow-xs">
-                  <HelpCircle className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="font-display font-bold text-brand-on-surface text-base">Expert Advice</h4>
-                  <p className="text-xs sm:text-sm text-brand-on-surface-variant mt-1 leading-relaxed">
-                    Receive expert legal advice, financial evaluation assistance, and seamless documentation support throughout.
-                  </p>
-                </div>
-              </div>
-
-              {/* Entry 3 */}
-              <div className="flex gap-4">
-                <div className="flex-none w-12 h-12 rounded-xl bg-brand-surface-container-highest flex items-center justify-center text-blue-600 shadow-xs">
-                  <Compass className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="font-display font-bold text-brand-on-surface text-base">Local Presence</h4>
-                  <p className="text-xs sm:text-sm text-brand-on-surface-variant mt-1 leading-relaxed">
-                    Deep localized insights into Ahmedabad's fastest growing zones like S.G. Highway, South Bopal, and Bodakdev.
-                  </p>
+                <div className="space-y-3 min-w-0">
+                  <h4 className="font-display font-extrabold text-brand-on-surface text-lg">Office Address & Contact</h4>
+                  
+                  <div className="space-y-1.5 text-xs sm:text-sm text-brand-on-surface-variant font-medium">
+                    <p className="font-extrabold text-brand-on-surface text-sm sm:text-base">Gopal Naidu</p>
+                    <p className="flex items-center gap-2">
+                      <span className="text-gray-400">Phone:</span>
+                      <a href="tel:9638177321" className="text-brand-secondary hover:underline font-bold">+91 96381 77321</a>
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <span className="text-gray-400">Email:</span>
+                      <a href="mailto:Gopalnaidu085@gmail.com" className="text-brand-secondary hover:underline">Gopalnaidu085@gmail.com</a>
+                    </p>
+                    <div className="pt-2 border-t border-gray-150 mt-2">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Office Location</span>
+                      <p className="leading-relaxed font-light text-brand-on-surface">
+                        Shop no 18, Sangani Platinum, Opp. Shalin Heights 2,<br />
+                        Narol Aslali Highway, Narol, Ahmedabad, Gujarat - 382405
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
