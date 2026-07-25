@@ -39,7 +39,7 @@ export default function DetailView({
     ? property.agent
     : {
         name: 'Gopal Naidu',
-        title: 'Krishna Properties Representative',
+        title: 'Krishna Properties Owner',
         image: '/gopal_naidu.jpg',
         phone: '9638177321',
         whatsapp: 'https://wa.me/919638177321'
@@ -66,33 +66,6 @@ export default function DetailView({
   const [scheduleSuccess, setScheduleSuccess] = useState(false);
   const [visitDate, setVisitDate] = useState('');
   const [visitTime, setVisitTime] = useState('10:00 AM');
-  
-  const [calcOpen, setCalcOpen] = useState(false);
-  const [loanTerm, setLoanTerm] = useState(20);
-  const [downPayment, setDownPayment] = useState(Math.round(property.price * 0.2));
-  const [interestRate, setInterestRate] = useState(8.5);
-
-  const calculateMortgage = () => {
-    const P = property.price - downPayment;
-    const r = (interestRate / 100) / 12;
-    const n = loanTerm * 12;
-    if (r === 0) return P / n;
-    const monthly = (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-    return Math.round(monthly);
-  };
-
-  const formattedMonthly = () => {
-    const amt = calculateMortgage();
-    if (property.currency === 'USD') {
-      return `$${amt.toLocaleString()}/mo`;
-    } else {
-      // INR lakhs/crores standard formatting for simple numeric monthly
-      if (amt >= 100000) {
-        return `₹${(amt / 100000).toFixed(2)} Lakh/mo`;
-      }
-      return `₹${amt.toLocaleString()}/mo`;
-    }
-  };
 
   // Select first image as main, next 4 as gallery (fallback if fewer than 5)
   const mainImage = property.images[0];
@@ -368,8 +341,15 @@ export default function DetailView({
                 referrerPolicy="no-referrer"
               />
               <div>
-                <h4 className="font-display font-bold text-base text-brand-on-surface">
-                  {displayAgent.name}
+                <h4 className="font-display font-bold text-base text-brand-on-surface flex items-center gap-1.5">
+                  <span className={!userEmail ? 'blur-xs select-none' : ''}>
+                    {userEmail ? displayAgent.name : 'Gopal Naidu'}
+                  </span>
+                  {!userEmail && (
+                    <span className="px-1.5 py-0.5 text-[8px] bg-amber-50 text-amber-600 border border-amber-100 rounded-full font-bold uppercase tracking-wider shrink-0 flex items-center gap-0.5">
+                      🔒 Login to view
+                    </span>
+                  )}
                 </h4>
                 <p className="text-xs text-brand-on-surface-variant mt-0.5">
                   {displayAgent.title}
@@ -380,25 +360,47 @@ export default function DetailView({
             {/* Action buttons list */}
             <div className="space-y-3">
               <button 
-                onClick={() => setCallContactOpen(true)}
+                onClick={() => {
+                  if (!userEmail) {
+                    alert("Please log in or sign up to view contact details and call the owner.");
+                    return;
+                  }
+                  setCallContactOpen(true);
+                }}
                 className="w-full flex items-center justify-center gap-2 bg-brand-primary hover:bg-black/95 text-white font-semibold py-3 text-xs rounded-lg transition-colors cursor-pointer shadow-xs"
               >
                 <Phone className="w-4 h-4" />
                 <span>Call Now</span>
               </button>
 
-              <a 
-                href={displayAgent.whatsapp}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full flex items-center justify-center gap-2 bg-brand-secondary hover:bg-brand-primary text-white font-semibold py-3 text-xs rounded-lg transition-colors cursor-pointer text-center shadow-xs"
-              >
-                <span className="text-lg">💬</span>
-                <span>WhatsApp Agent</span>
-              </a>
+              {!userEmail ? (
+                <button 
+                  onClick={() => alert("Please log in or sign up to view contact details and chat on WhatsApp.")}
+                  className="w-full flex items-center justify-center gap-2 bg-brand-secondary hover:bg-brand-primary text-white font-semibold py-3 text-xs rounded-lg transition-colors cursor-pointer text-center shadow-xs"
+                >
+                  <span className="text-lg">💬</span>
+                  <span>WhatsApp Agent</span>
+                </button>
+              ) : (
+                <a 
+                  href={displayAgent.whatsapp}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full flex items-center justify-center gap-2 bg-brand-secondary hover:bg-brand-primary text-white font-semibold py-3 text-xs rounded-lg transition-colors cursor-pointer text-center shadow-xs"
+                >
+                  <span className="text-lg">💬</span>
+                  <span>WhatsApp Agent</span>
+                </a>
+              )}
 
               <button 
-                onClick={() => setScheduleOpen(true)}
+                onClick={() => {
+                  if (!userEmail) {
+                    alert("Please log in or sign up to view contact details and schedule a visit.");
+                    return;
+                  }
+                  setScheduleOpen(true);
+                }}
                 className="w-full flex items-center justify-center gap-2 bg-white border border-gray-200 text-brand-on-surface hover:bg-gray-50 font-semibold py-3 text-xs rounded-lg transition-all cursor-pointer shadow-2xs"
               >
                 <Calendar className="w-4 h-4" />
@@ -435,22 +437,6 @@ export default function DetailView({
                 <span>Share</span>
               </button>
             </div>
-          </div>
-
-          {/* Mortgage Banner Calculator trigger */}
-          <div 
-            onClick={() => setCalcOpen(true)}
-            className="bg-brand-primary-container text-white p-5 rounded-xl border border-brand-primary-container/20 cursor-pointer hover:bg-brand-primary-container/95 transition-all shadow-xs flex items-center justify-between"
-          >
-            <div className="space-y-1">
-              <p className="text-[10px] uppercase font-bold tracking-widest text-brand-on-primary-container">Estimated Financing</p>
-              <h4 className="font-display font-extrabold text-sm flex items-center gap-1.5">
-                <Calculator className="w-4 h-4 text-brand-secondary" />
-                <span>Get Mortgage Help</span>
-              </h4>
-              <p className="text-xs text-brand-on-primary-container font-medium mt-1">Starting from {formattedMonthly()}</p>
-            </div>
-            <span className="text-lg text-brand-secondary">▶</span>
           </div>
 
         </div>
@@ -538,126 +524,7 @@ export default function DetailView({
         )}
       </AnimatePresence>
 
-      {/* MORTGAGE CALCULATOR MODAL */}
-      <AnimatePresence>
-        {calcOpen && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white w-full max-w-md rounded-xl p-6 shadow-2xl relative border border-gray-100 text-brand-on-surface space-y-6"
-            >
-              <button 
-                onClick={() => setCalcOpen(false)}
-                className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-brand-on-surface cursor-pointer rounded-full hover:bg-gray-100"
-              >
-                ✕
-              </button>
 
-              <div className="flex items-center gap-2">
-                <Calculator className="w-5 h-5 text-brand-secondary" />
-                <h3 className="font-display font-extrabold text-base">Mortgage Estimator</h3>
-              </div>
-
-              {loanSuccess ? (
-                <div className="py-8 text-center space-y-4">
-                  <div className="w-16 h-16 bg-brand-primary/10 rounded-full flex items-center justify-center mx-auto text-brand-primary">
-                    <CheckCircle className="w-10 h-10 animate-bounce text-brand-primary" />
-                  </div>
-                  <div>
-                    <h4 className="font-display font-black text-base text-brand-on-surface">Application Submitted!</h4>
-                    <p className="text-xs text-brand-on-surface-variant font-light max-w-xs mx-auto mt-1.5 leading-relaxed">
-                      Our premium mortgage officers at HDFC & ICICI have been dispatched to analyze your criteria and draft customized luxury term sheets.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setLoanSuccess(false);
-                      setCalcOpen(false);
-                    }}
-                    className="mt-2 px-6 py-2.5 bg-brand-primary hover:bg-black text-white text-xs font-bold uppercase tracking-wider rounded-lg cursor-pointer"
-                  >
-                    Done
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="p-4 bg-brand-surface-container-low rounded-xl text-center">
-                    <span className="text-[10px] uppercase font-extrabold tracking-widest text-brand-on-primary-container block">Monthly Installment</span>
-                    <span className="text-3xl font-display font-black text-brand-secondary block mt-1.5">{formattedMonthly()}</span>
-                  </div>
-
-                  <div className="space-y-4">
-                    {/* Down payment slider */}
-                    <div>
-                      <div className="flex justify-between text-xs font-semibold mb-1">
-                        <span className="text-brand-on-surface-variant">Down Payment</span>
-                        <span className="text-brand-on-surface">{property.currency === 'USD' ? `$${downPayment.toLocaleString()}` : `₹${downPayment.toLocaleString()}`}</span>
-                      </div>
-                      <input 
-                        type="range"
-                        min={Math.round(property.price * 0.1)}
-                        max={Math.round(property.price * 0.8)}
-                        step={Math.round(property.price * 0.05)}
-                        value={downPayment}
-                        onChange={(e) => setDownPayment(parseInt(e.target.value))}
-                        className="w-full accent-brand-secondary h-1.5 bg-gray-200 rounded-lg cursor-pointer"
-                      />
-                      <span className="text-[10px] text-gray-400">Min 10% - Max 80%</span>
-                    </div>
-
-                    {/* Interest Rate slider */}
-                    <div>
-                      <div className="flex justify-between text-xs font-semibold mb-1">
-                        <span className="text-brand-on-surface-variant">Interest Rate</span>
-                        <span className="text-brand-on-surface">{interestRate}%</span>
-                      </div>
-                      <input 
-                        type="range"
-                        min="5"
-                        max="15"
-                        step="0.1"
-                        value={interestRate}
-                        onChange={(e) => setInterestRate(parseFloat(e.target.value))}
-                        className="w-full accent-brand-secondary h-1.5 bg-gray-200 rounded-lg cursor-pointer"
-                      />
-                    </div>
-
-                    {/* Term Select */}
-                    <div>
-                      <label className="block text-xs font-bold text-brand-on-surface-variant uppercase tracking-wider mb-1.5">Loan Term (Years)</label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {[10, 20, 30].map((term) => (
-                          <button
-                            key={term}
-                            type="button"
-                            onClick={() => setLoanTerm(term)}
-                            className={`py-2 text-xs font-bold rounded-lg border transition-colors cursor-pointer text-center ${
-                              loanTerm === term
-                                ? 'bg-black text-white border-black'
-                                : 'bg-white border-gray-200 hover:bg-gray-50'
-                            }`}
-                          >
-                            {term} Years
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setLoanSuccess(true)}
-                    className="w-full bg-brand-primary text-white hover:bg-black font-semibold py-3 text-xs rounded-lg transition-colors cursor-pointer text-center shadow-xs"
-                  >
-                    Apply for Loan Assistance
-                  </button>
-                </>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* VIRTUAL REALITY (VR) 3D INTERACTIVE PANORAMIC TOUR MODAL */}
       <AnimatePresence>
