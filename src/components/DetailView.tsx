@@ -337,7 +337,7 @@ export default function DetailView({
               <img 
                 src={displayAgent.image} 
                 alt={displayAgent.name}
-                className="w-14 h-14 rounded-full object-cover border-2 border-brand-secondary shadow-xs"
+                className={`w-14 h-14 rounded-full object-cover border-2 border-brand-secondary shadow-xs ${!userEmail ? 'blur-xs select-none' : ''}`}
                 referrerPolicy="no-referrer"
               />
               <div>
@@ -351,7 +351,7 @@ export default function DetailView({
                     </span>
                   )}
                 </h4>
-                <p className="text-xs text-brand-on-surface-variant mt-0.5">
+                <p className={`text-xs text-brand-on-surface-variant mt-0.5 ${!userEmail ? 'blur-xs select-none' : ''}`}>
                   {displayAgent.title}
                 </p>
               </div>

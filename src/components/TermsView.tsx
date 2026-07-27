@@ -130,7 +130,7 @@ export default function TermsView({ onBack }: TermsViewProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1.5 text-gray-500 font-medium">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-brand-secondary shrink-0" />
-                <span>Representative: Gopal Naidu</span>
+                <span>Owner: Gopal Naidu</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-brand-secondary shrink-0" />
