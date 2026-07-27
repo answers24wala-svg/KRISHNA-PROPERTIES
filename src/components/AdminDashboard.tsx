@@ -58,8 +58,10 @@ export default function AdminDashboard({
   // Filter users by search term
   const filteredUsers = useMemo(() => {
     return users.filter(u => 
-      u.email.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-      u.role.toLowerCase().includes(userSearchTerm.toLowerCase())
+      (u.email?.toLowerCase() || '').includes(userSearchTerm.toLowerCase()) ||
+      (u.role?.toLowerCase() || '').includes(userSearchTerm.toLowerCase()) ||
+      (u.name?.toLowerCase() || '').includes(userSearchTerm.toLowerCase()) ||
+      (u.phone || '').includes(userSearchTerm)
     );
   }, [users, userSearchTerm]);
 
@@ -331,8 +333,9 @@ export default function AdminDashboard({
                 <table className="min-w-full divide-y divide-gray-150 text-left">
                   <thead>
                     <tr className="text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest">
-                      <th scope="col" className="pb-3 pr-4">User Email</th>
-                      <th scope="col" className="pb-3 px-4">User ID</th>
+                      <th scope="col" className="pb-3 pr-4">Full Name</th>
+                      <th scope="col" className="pb-3 px-4">User Email</th>
+                      <th scope="col" className="pb-3 px-4">Phone Number</th>
                       <th scope="col" className="pb-3 px-4">Account Role</th>
                       <th scope="col" className="pb-3 pl-4 text-right">Joined Date</th>
                     </tr>
@@ -340,8 +343,9 @@ export default function AdminDashboard({
                   <tbody className="divide-y divide-gray-100 text-xs">
                     {filteredUsers.map((u) => (
                       <tr key={u.id} className="hover:bg-brand-surface-container/30 transition-colors">
-                        <td className="py-4 pr-4 font-bold text-brand-on-surface">{u.email}</td>
-                        <td className="py-4 px-4 font-mono text-[10px] text-gray-400">{u.id}</td>
+                        <td className="py-4 pr-4 font-bold text-brand-on-surface">{u.name || 'N/A'}</td>
+                        <td className="py-4 px-4 text-brand-on-surface-variant">{u.email}</td>
+                        <td className="py-4 px-4 font-mono font-bold text-brand-secondary">{u.phone || 'N/A'}</td>
                         <td className="py-4 px-4">
                           <span className={`px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider rounded-full border ${
                             u.role === 'seller'
@@ -366,7 +370,7 @@ export default function AdminDashboard({
                     ))}
                     {filteredUsers.length === 0 && (
                       <tr>
-                        <td colSpan={4} className="py-8 text-center text-gray-400">
+                        <td colSpan={5} className="py-8 text-center text-gray-400">
                           No users matched your query.
                         </td>
                       </tr>

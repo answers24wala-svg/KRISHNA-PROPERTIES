@@ -17,6 +17,7 @@ interface NavbarProps {
 }
 
 interface MockUser {
+  name?: string;
   email: string;
   phone: string;
   role: 'buyer' | 'seller';
@@ -45,6 +46,7 @@ export default function Navbar({
   const [signupRole, setSignupRole] = useState<'buyer' | 'seller'>('buyer');
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [phone, setPhone] = useState('');
+  const [fullName, setFullName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -170,9 +172,14 @@ export default function Navbar({
             setUsername('');
             setPassword('');
             setPhone('');
+            setFullName('');
           }, 1000);
         } else {
           // Sign Up mode
+          if (!fullName.trim()) {
+            setLoginError("Name is required to register an account.");
+            return;
+          }
           if (!phone.trim()) {
             setLoginError("Phone number is required to register an account.");
             return;
@@ -183,7 +190,9 @@ export default function Navbar({
             options: {
               data: {
                 role: signupRole,
-                phone: phone
+                phone: phone,
+                name: fullName,
+                full_name: fullName
               }
             }
           });
@@ -192,6 +201,7 @@ export default function Navbar({
             return;
           }
           mockUserDb[username.toLowerCase()] = {
+            name: fullName,
             email: username,
             phone: phone,
             role: signupRole
@@ -249,14 +259,20 @@ export default function Navbar({
           setUsername('');
           setPassword('');
           setPhone('');
+          setFullName('');
         }, 1000);
       } else {
         // Sign Up in local sandbox
+        if (!fullName.trim()) {
+          setLoginError("Name is required to register an account.");
+          return;
+        }
         if (!phone.trim()) {
           setLoginError("Phone number is required to register an account.");
           return;
         }
         mockUserDb[username.toLowerCase()] = {
+          name: fullName,
           email: username,
           phone: phone,
           role: signupRole
@@ -558,6 +574,22 @@ export default function Navbar({
                   </div>
                 )}
 
+                {authMode === 'signup' && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="e.g. Gopal Naidu"
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
+                    />
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">
                     {authMode === 'login' ? 'Email or Phone Number' : 'Email Address'}
@@ -568,18 +600,6 @@ export default function Navbar({
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder={authMode === 'login' ? 'e.g. name@example.com or 9638177321' : 'name@example.com'}
-                    className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••••"
                     className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
                   />
                 </div>
@@ -597,6 +617,18 @@ export default function Navbar({
                     />
                   </div>
                 )}
+
+                <div>
+                  <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
+                  />
+                </div>
 
                 {authMode === 'signup' && (
                   <div>
@@ -638,6 +670,7 @@ export default function Navbar({
                       setLoginError('');
                       setUsername('');
                       setPassword('');
+                      setFullName('');
                     }}
                     className="flex-1 py-2.5 text-xs font-bold uppercase tracking-wider text-gray-500 border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer text-center"
                   >

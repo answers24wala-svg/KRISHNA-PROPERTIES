@@ -70,10 +70,10 @@ export default function App() {
     setIsLoading(false);
   };
 
-  const syncUserProfile = async (id: string, email: string | null, role: string, phone?: string) => {
+  const syncUserProfile = async (id: string, email: string | null, role: string, phone?: string, name?: string) => {
     if (!dbService.isLiveDb() || !supabase || !email) return;
     try {
-      await supabase.from('profiles').upsert({ id, email, role, phone });
+      await supabase.from('profiles').upsert({ id, email, role, phone, name });
     } catch (err) {
       console.error('Error syncing profile:', err);
     }
@@ -89,15 +89,16 @@ export default function App() {
           const email = session.user.email || null;
           const role = session.user.user_metadata?.role || 'buyer';
           const phone = session.user.user_metadata?.phone || undefined;
+          const name = session.user.user_metadata?.name || session.user.user_metadata?.full_name || undefined;
           setUserEmail(email);
           if (email?.toLowerCase() === 'gopalnaidu085@gmail.com') {
             setIsAdmin(true);
             setUserRole('seller');
-            syncUserProfile(session.user.id, email, 'seller', phone);
+            syncUserProfile(session.user.id, email, 'seller', phone, 'Gopal Naidu');
           } else {
             setIsAdmin(false);
             setUserRole(role);
-            syncUserProfile(session.user.id, email, role, phone);
+            syncUserProfile(session.user.id, email, role, phone, name);
           }
         }
       });
@@ -108,15 +109,16 @@ export default function App() {
           const email = session.user.email || null;
           const role = session.user.user_metadata?.role || 'buyer';
           const phone = session.user.user_metadata?.phone || undefined;
+          const name = session.user.user_metadata?.name || session.user.user_metadata?.full_name || undefined;
           setUserEmail(email);
           if (email?.toLowerCase() === 'gopalnaidu085@gmail.com') {
             setIsAdmin(true);
             setUserRole('seller');
-            syncUserProfile(session.user.id, email, 'seller', phone);
+            syncUserProfile(session.user.id, email, 'seller', phone, 'Gopal Naidu');
           } else {
             setIsAdmin(false);
             setUserRole(role);
-            syncUserProfile(session.user.id, email, role, phone);
+            syncUserProfile(session.user.id, email, role, phone, name);
           }
         } else {
           setUserEmail(null);
