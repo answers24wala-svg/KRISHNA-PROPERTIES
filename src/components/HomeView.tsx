@@ -20,8 +20,10 @@ export default function HomeView({ setScreen, setSelectedPropertyId, onSearch, p
   const [typeOpen, setTypeOpen] = useState(false);
   const [budgetOpen, setBudgetOpen] = useState(false);
 
-  // Get first 3 properties for featured
-  const featuredProperties = properties.slice(0, 3);
+  // Get properties marked as featured (fallback to first 3 if none are marked)
+  const featuredProperties = properties.filter(p => p.isFeatured).length > 0
+    ? properties.filter(p => p.isFeatured).slice(0, 6)
+    : properties.slice(0, 3);
 
   const handleSearchSubmit = () => {
     const searchFilters: any = {};
@@ -121,7 +123,7 @@ export default function HomeView({ setScreen, setSelectedPropertyId, onSearch, p
               </button>
               {typeOpen && (
                 <div className="absolute left-0 right-0 mt-1 z-50 bg-white border border-gray-100 rounded-lg shadow-lg py-1.5 text-sm">
-                  {['Any Type', 'Apartment', 'Independent Villa', 'Penthouse', 'Commercial', 'Flat', 'Bungalow'].map((type) => (
+                  {['Any Type', 'Apartment', 'Independent Villa', 'Penthouse', 'Commercial', 'Flat', 'Bungalow', 'PG'].map((type) => (
                     <button
                       key={type}
                       onClick={() => { setPropertyType(type); setTypeOpen(false); }}

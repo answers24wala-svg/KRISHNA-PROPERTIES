@@ -77,6 +77,7 @@ export default function ListingsView({
     'Commercial': searchFilters.propertyType === 'Commercial',
     'Flat': searchFilters.propertyType === 'Flat',
     'Bungalow': searchFilters.propertyType === 'Bungalow',
+    'PG': searchFilters.propertyType === 'PG',
   });
 
   const [selectedStatus, setSelectedStatus] = useState<string | null>(searchFilters.listingStatus || null);
@@ -105,6 +106,7 @@ export default function ListingsView({
       'Commercial': false,
       'Flat': false,
       'Bungalow': false,
+      'PG': false,
     });
     setSelectedStatus(null);
     setFurnishedFilter(false);

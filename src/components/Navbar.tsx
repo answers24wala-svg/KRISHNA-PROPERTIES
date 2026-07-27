@@ -337,11 +337,7 @@ export default function Navbar({
 
           {/* Right Action Controls */}
           <div className="hidden md:flex items-center space-x-3.5">
-            {/* Ahmedabad Location indicator */}
-            <div className="flex items-center text-xs font-semibold text-brand-on-surface gap-1.5 px-3 py-2 bg-brand-surface-container-low rounded-full border border-gray-100">
-              <MapPin className="w-3.5 h-3.5 text-brand-secondary" />
-              <span>Ahmedabad</span>
-            </div>
+
 
             {/* Login / Auth Indicator */}
             {isAdmin || userEmail ? (
@@ -390,10 +386,7 @@ export default function Navbar({
 
           {/* Mobile menu button */}
           <div className="flex items-center md:hidden gap-2">
-            <div className="flex items-center text-[10px] font-bold text-brand-on-surface gap-1 px-2.5 py-1.5 bg-brand-surface-container-low rounded-full border border-gray-100">
-              <MapPin className="w-3 h-3 text-brand-secondary" />
-              <span>Ahmedabad</span>
-            </div>
+
             
             <button
               onClick={() => setIsOpen(!isOpen)}

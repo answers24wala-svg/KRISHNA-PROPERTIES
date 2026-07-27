@@ -21,7 +21,7 @@ export interface Property {
   currency: 'INR' | 'USD';
   priceFormatted: string; // e.g., "1.25 Cr" or "$4,250,000"
   areaSqft: number;
-  propertyType: 'Apartment' | 'Independent Villa' | 'Penthouse' | 'Commercial' | 'Flat' | 'Bungalow';
+  propertyType: 'Apartment' | 'Independent Villa' | 'Penthouse' | 'Commercial' | 'Flat' | 'Bungalow' | 'PG';
   listingStatus: 'New Launch' | 'Ready to Move' | 'Resale';
   bedrooms: number;
   bathrooms: number;
