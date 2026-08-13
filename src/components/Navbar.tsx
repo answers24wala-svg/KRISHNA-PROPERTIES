@@ -42,9 +42,11 @@ export default function Navbar({
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password' | 'reset-password'>('login');
   const [signupRole, setSignupRole] = useState<'buyer' | 'seller'>('buyer');
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [forgotSuccess, setForgotSuccess] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
   const [phone, setPhone] = useState('');
   const [fullName, setFullName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,6 +58,20 @@ export default function Navbar({
       setIsLoginOpen(true);
     }
   }, [triggerSellerLoginCounter]);
+
+  useEffect(() => {
+    if (isSupabaseConfigured && supabase !== null) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setAuthMode('reset-password');
+          setIsLoginOpen(true);
+        }
+      });
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, []);
 
   const navItems = [
     { label: 'Home', screen: 'home' as const },
@@ -106,6 +122,30 @@ export default function Navbar({
     if (isSupabaseConfigured && supabase !== null) {
       setIsSubmitting(true);
       try {
+        if (authMode === 'forgot-password') {
+          const { error } = await supabase.auth.resetPasswordForEmail(username, {
+            redirectTo: `${window.location.origin}/`,
+          });
+          if (error) {
+            setLoginError(error.message);
+            return;
+          }
+          setForgotSuccess(true);
+          return;
+        }
+
+        if (authMode === 'reset-password') {
+          const { error } = await supabase.auth.updateUser({
+            password: password,
+          });
+          if (error) {
+            setLoginError(error.message);
+            return;
+          }
+          setResetSuccess(true);
+          return;
+        }
+
         if (authMode === 'login') {
           // If login identifier doesn't have '@', we assume it's a phone number and query profiles
           if (!username.includes('@')) {
@@ -261,7 +301,7 @@ export default function Navbar({
           setPhone('');
           setFullName('');
         }, 1000);
-      } else {
+      } else if (authMode === 'signup') {
         // Sign Up in local sandbox
         if (!fullName.trim()) {
           setLoginError("Name is required to register an account.");
@@ -278,6 +318,10 @@ export default function Navbar({
           role: signupRole
         };
         setSignupSuccess(true);
+      } else if (authMode === 'forgot-password') {
+        setForgotSuccess(true);
+      } else if (authMode === 'reset-password') {
+        setResetSuccess(true);
       }
     }
   };
@@ -486,49 +530,61 @@ export default function Navbar({
               <KPLogo className="w-14 h-14" />
               <div>
                 <h3 className="font-display text-lg font-black tracking-tight text-brand-on-surface">
-                  {authMode === 'login' ? 'Login' : 'Create Account'}
+                  {authMode === 'login' 
+                    ? 'Login' 
+                    : authMode === 'signup' 
+                    ? 'Create Account' 
+                    : authMode === 'forgot-password' 
+                    ? 'Forgot Password' 
+                    : 'Reset Password'}
                 </h3>
                 <p className="text-xs text-brand-on-surface-variant font-light mt-0.5">
                   {authMode === 'login' 
                     ? 'Log in to browse properties and manage listings.' 
-                    : 'Sign up to register a new user account.'}
+                    : authMode === 'signup'
+                    ? 'Sign up to register a new user account.'
+                    : authMode === 'forgot-password'
+                    ? 'Enter your email address to receive a secure password reset link.'
+                    : 'Choose a strong new password for your account.'}
                 </p>
               </div>
             </div>
 
             {/* Login / Signup mode tabs */}
-            <div className="flex bg-gray-50 p-1 rounded-lg mb-6 border border-gray-100">
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode('login');
-                  setLoginError('');
-                  setSignupSuccess(false);
-                }}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
-                  authMode === 'login' 
-                    ? 'bg-white text-brand-primary shadow-xs' 
-                    : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                Login
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode('signup');
-                  setLoginError('');
-                  setSignupSuccess(false);
-                }}
-                className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
-                  authMode === 'signup' 
-                    ? 'bg-white text-brand-primary shadow-xs' 
-                    : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                Sign Up
-              </button>
-            </div>
+            {(authMode === 'login' || authMode === 'signup') && (
+              <div className="flex bg-gray-50 p-1 rounded-lg mb-6 border border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('login');
+                    setLoginError('');
+                    setSignupSuccess(false);
+                  }}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                    authMode === 'login' 
+                      ? 'bg-white text-brand-primary shadow-xs' 
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('signup');
+                    setLoginError('');
+                    setSignupSuccess(false);
+                  }}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${
+                    authMode === 'signup' 
+                      ? 'bg-white text-brand-primary shadow-xs' 
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  Sign Up
+                </button>
+              </div>
+            )}
 
             {/* Form or Success indicator */}
             {loginSuccess ? (
@@ -566,6 +622,70 @@ export default function Navbar({
                   </button>
                 </div>
               </div>
+            ) : forgotSuccess ? (
+              <div className="text-center py-8 space-y-4">
+                <div className="w-16 h-16 bg-brand-primary/15 rounded-full flex items-center justify-center mx-auto text-brand-primary animate-bounce">
+                  <CheckCircle2 className="w-10 h-10 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h4 className="font-display font-extrabold text-base text-brand-on-surface">Reset Link Sent</h4>
+                  <p className="text-xs text-brand-on-surface-variant font-light mt-2 px-2 leading-relaxed">
+                    A password reset link has been dispatched to <span className="font-bold text-brand-primary">{username}</span>.
+                    Please check your inbox and click the recovery link to set your new password.
+                  </p>
+                  
+                  {/* Developers sandbox simulation bypass option */}
+                  {!isSupabaseConfigured && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForgotSuccess(false);
+                        setAuthMode('reset-password');
+                      }}
+                      className="mt-4 text-[10px] uppercase font-bold tracking-widest text-brand-secondary hover:underline cursor-pointer block mx-auto"
+                    >
+                      [Simulate Redirect Link Click]
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotSuccess(false);
+                      setAuthMode('login');
+                      setUsername('');
+                      setPassword('');
+                    }}
+                    className="mt-6 w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-xs transition-colors cursor-pointer text-center"
+                  >
+                    Go to Login
+                  </button>
+                </div>
+              </div>
+            ) : resetSuccess ? (
+              <div className="text-center py-8 space-y-4">
+                <div className="w-16 h-16 bg-brand-primary/15 rounded-full flex items-center justify-center mx-auto text-brand-primary animate-bounce">
+                  <CheckCircle2 className="w-10 h-10 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h4 className="font-display font-extrabold text-base text-brand-on-surface">Password Updated</h4>
+                  <p className="text-xs text-brand-on-surface-variant font-light mt-2 px-2 leading-relaxed">
+                    Your password has been changed successfully. You can now use your new password to sign in.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResetSuccess(false);
+                      setAuthMode('login');
+                      setUsername('');
+                      setPassword('');
+                    }}
+                    className="mt-6 w-full py-2.5 bg-brand-primary hover:bg-brand-primary/90 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-xs transition-colors cursor-pointer text-center"
+                  >
+                    Go to Login
+                  </button>
+                </div>
+              </div>
             ) : (
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 {loginError && (
@@ -590,19 +710,52 @@ export default function Navbar({
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">
-                    {authMode === 'login' ? 'Email or Phone Number' : 'Email Address'}
-                  </label>
-                  <input
-                    type={authMode === 'login' ? 'text' : 'email'}
-                    required
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder={authMode === 'login' ? 'e.g. name@example.com or 9638177321' : 'name@example.com'}
-                    className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
-                  />
-                </div>
+                {authMode !== 'reset-password' && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">
+                      {authMode === 'login' ? 'Email or Phone Number' : 'Email Address'}
+                    </label>
+                    <input
+                      type={authMode === 'login' ? 'text' : 'email'}
+                      required
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder={authMode === 'login' ? 'e.g. name@example.com or 9638177321' : 'name@example.com'}
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
+                    />
+                  </div>
+                )}
+
+                {authMode !== 'forgot-password' && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">
+                      {authMode === 'reset-password' ? 'New Password' : 'Password'}
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••••••"
+                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
+                    />
+                  </div>
+                )}
+
+                {authMode === 'login' && (
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('forgot-password');
+                        setLoginError('');
+                      }}
+                      className="text-[10px] font-bold text-gray-400 hover:text-brand-secondary uppercase tracking-widest cursor-pointer hover:underline"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                )}
 
                 {authMode === 'signup' && (
                   <div>
@@ -666,15 +819,20 @@ export default function Navbar({
                   <button
                     type="button"
                     onClick={() => {
-                      setIsLoginOpen(false);
-                      setLoginError('');
-                      setUsername('');
-                      setPassword('');
-                      setFullName('');
+                      if (authMode === 'forgot-password' || authMode === 'reset-password') {
+                        setAuthMode('login');
+                        setLoginError('');
+                      } else {
+                        setIsLoginOpen(false);
+                        setLoginError('');
+                        setUsername('');
+                        setPassword('');
+                        setFullName('');
+                      }
                     }}
                     className="flex-1 py-2.5 text-xs font-bold uppercase tracking-wider text-gray-500 border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer text-center"
                   >
-                    Cancel
+                    {authMode === 'forgot-password' || authMode === 'reset-password' ? 'Back' : 'Cancel'}
                   </button>
                   <button
                     type="submit"
@@ -683,7 +841,13 @@ export default function Navbar({
                   >
                     {isSubmitting 
                       ? 'Wait...' 
-                      : (authMode === 'login' ? 'Log In' : 'Sign Up')}
+                      : authMode === 'login' 
+                      ? 'Log In' 
+                      : authMode === 'signup' 
+                      ? 'Sign Up' 
+                      : authMode === 'forgot-password' 
+                      ? 'Send Link' 
+                      : 'Save Password'}
                   </button>
                 </div>
               </form>
