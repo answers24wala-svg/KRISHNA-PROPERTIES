@@ -2,6 +2,8 @@ import { useState, FormEvent, useEffect } from 'react';
 import { MapPin, Menu, X, PlusCircle, Lock, LogOut, CheckCircle2, User } from 'lucide-react';
 import KPLogo from './KPLogo';
 import { supabase, isSupabaseConfigured } from '../supabaseClient';
+import { firebaseAuth } from '../firebase';
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
 
 interface NavbarProps {
   currentScreen: 'home' | 'listings' | 'detail' | 'upload' | 'dashboard' | 'privacy' | 'terms';
@@ -42,14 +44,18 @@ export default function Navbar({
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
-  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password' | 'reset-password'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'signup' | 'forgot-password' | 'reset-password' | 'phone-login' | 'phone-otp' | 'complete-phone-signup'>('login');
   const [signupRole, setSignupRole] = useState<'buyer' | 'seller'>('buyer');
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [forgotSuccess, setForgotSuccess] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
   const [phone, setPhone] = useState('');
   const [fullName, setFullName] = useState('');
+  const [otp, setOtp] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [phoneCountryCode, setPhoneCountryCode] = useState('+91');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSignUpVerification, setIsSignUpVerification] = useState(false);
 
   useEffect(() => {
     if (triggerSellerLoginCounter && triggerSellerLoginCounter > 0) {
@@ -110,9 +116,232 @@ export default function Navbar({
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
 
+  const initRecaptcha = () => {
+    if (!(window as any).recaptchaVerifier) {
+      try {
+        (window as any).recaptchaVerifier = new RecaptchaVerifier(firebaseAuth, 'recaptcha-container', {
+          'size': 'invisible',
+          'callback': () => {
+            // reCAPTCHA solved
+          }
+        });
+      } catch (error: any) {
+        console.error('reCAPTCHA init error:', error);
+      }
+    }
+  };
+
+  const sendSmsOtp = async (targetPhone: string, isSignUp: boolean = false) => {
+    setLoginError('');
+    setIsSubmitting(true);
+    setIsSignUpVerification(isSignUp);
+    
+    let formattedPhone = targetPhone.trim();
+    if (!formattedPhone.startsWith('+')) {
+      if (formattedPhone.startsWith('0')) {
+        formattedPhone = formattedPhone.substring(1);
+      }
+      formattedPhone = `${phoneCountryCode}${formattedPhone}`;
+    }
+
+    try {
+      initRecaptcha();
+      const verifier = (window as any).recaptchaVerifier;
+      const confirmation = await signInWithPhoneNumber(firebaseAuth, formattedPhone, verifier);
+      setConfirmationResult(confirmation);
+      setPhone(formattedPhone);
+      setAuthMode('phone-otp');
+    } catch (err: any) {
+      console.error("SMS OTP error:", err);
+      setLoginError(err?.message || "Failed to send verification SMS. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const verifySmsOtp = async (code: string) => {
+    if (!confirmationResult) {
+      setLoginError("No verification session found. Please request a code first.");
+      return;
+    }
+    setLoginError('');
+    setIsSubmitting(true);
+    try {
+      const result = await confirmationResult.confirm(code);
+      const user = result.user;
+      const verifiedPhone = user.phoneNumber || phone;
+
+      if (isSignUpVerification) {
+        // Continue standard Supabase / Mock SignUp
+        if (isSupabaseConfigured && supabase !== null) {
+          const { error } = await supabase.auth.signUp({
+            email: username,
+            password: password,
+            options: {
+              data: {
+                role: signupRole,
+                phone: verifiedPhone,
+                name: fullName,
+                full_name: fullName
+              }
+            }
+          });
+          if (error) {
+            setLoginError(error.message);
+            return;
+          }
+          mockUserDb[username.toLowerCase()] = {
+            name: fullName,
+            email: username,
+            phone: verifiedPhone,
+            role: signupRole
+          };
+          setSignupSuccess(true);
+        } else {
+          // Sandbox sign up
+          mockUserDb[username.toLowerCase()] = {
+            name: fullName,
+            email: username,
+            phone: verifiedPhone,
+            role: signupRole
+          };
+          setSignupSuccess(true);
+        }
+      } else {
+        // Phone Login path
+        if (isSupabaseConfigured && supabase !== null) {
+          const { data: profile, error: profileErr } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('phone', verifiedPhone)
+            .maybeSingle();
+
+          if (profileErr) {
+            setLoginError(profileErr.message);
+            return;
+          }
+
+          if (profile) {
+            // Existing user - log in
+            setLoginSuccess(true);
+            setTimeout(() => {
+              const email = profile.email;
+              setUserEmail(email);
+              if (email?.toLowerCase() === 'gopalnaidu085@gmail.com') {
+                setIsAdmin(true);
+                setUserRole('seller');
+              } else {
+                setIsAdmin(false);
+                setUserRole(profile.role);
+              }
+              setIsLoginOpen(false);
+              setLoginSuccess(false);
+              setUsername('');
+              setPassword('');
+              setPhone('');
+              setFullName('');
+              setOtp('');
+              setConfirmationResult(null);
+            }, 1000);
+          } else {
+            // New phone registration - complete profile fields
+            setAuthMode('complete-phone-signup');
+          }
+        } else {
+          // Local sandbox phone login
+          const mockUser = Object.values(mockUserDb).find(u => u.phone === verifiedPhone);
+          if (mockUser) {
+            setLoginSuccess(true);
+            setTimeout(() => {
+              setUserEmail(mockUser.email);
+              setIsAdmin(mockUser.email?.toLowerCase() === 'gopalnaidu085@gmail.com');
+              setUserRole(mockUser.role);
+              setIsLoginOpen(false);
+              setLoginSuccess(false);
+              setUsername('');
+              setPassword('');
+              setPhone('');
+              setFullName('');
+              setOtp('');
+              setConfirmationResult(null);
+            }, 1000);
+          } else {
+            setAuthMode('complete-phone-signup');
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error("OTP verification error:", err);
+      setLoginError(err?.message || "Invalid OTP code. Please enter the correct 6-digit code.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCompletePhoneSignup = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+    setIsSubmitting(true);
+    try {
+      const uniqueEmail = username.trim() || `${phone.replace('+', '')}@krishnaproperties.com`;
+      const uid = firebaseAuth.currentUser?.uid || String(Date.now());
+      
+      if (isSupabaseConfigured && supabase !== null) {
+        // Upsert direct profile
+        const { error } = await supabase.from('profiles').upsert({
+          id: uid,
+          email: uniqueEmail,
+          role: signupRole,
+          phone: phone,
+          name: fullName
+        });
+        if (error) {
+          setLoginError(error.message);
+          return;
+        }
+      }
+      
+      // Save in mock DB as fallback
+      mockUserDb[uniqueEmail.toLowerCase()] = {
+        name: fullName,
+        email: uniqueEmail,
+        phone: phone,
+        role: signupRole
+      };
+
+      setLoginSuccess(true);
+      setTimeout(() => {
+        setUserEmail(uniqueEmail);
+        setIsAdmin(uniqueEmail.toLowerCase() === 'gopalnaidu085@gmail.com');
+        setUserRole(signupRole);
+        setIsLoginOpen(false);
+        setLoginSuccess(false);
+        setUsername('');
+        setPassword('');
+        setPhone('');
+        setFullName('');
+        setOtp('');
+        setConfirmationResult(null);
+      }, 1000);
+    } catch (err: any) {
+      setLoginError(err?.message || String(err));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleLoginSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoginError('');
+
+    if (authMode === 'phone-login') {
+      await sendSmsOtp(phone, false);
+      return;
+    }
+    if (authMode === 'phone-otp') {
+      await verifySmsOtp(otp);
+      return;
+    }
     
     // Check credentials locally first as bypass for sandboxes
     const isAdminCreds = username.toLowerCase() === 'gopalnaidu085@gmail.com' && password === 'Naidu@gopal#2207';
@@ -224,29 +453,7 @@ export default function Navbar({
             setLoginError("Phone number is required to register an account.");
             return;
           }
-          const { error } = await supabase.auth.signUp({
-            email: username,
-            password: password,
-            options: {
-              data: {
-                role: signupRole,
-                phone: phone,
-                name: fullName,
-                full_name: fullName
-              }
-            }
-          });
-          if (error) {
-            setLoginError(error.message);
-            return;
-          }
-          mockUserDb[username.toLowerCase()] = {
-            name: fullName,
-            email: username,
-            phone: phone,
-            role: signupRole
-          };
-          setSignupSuccess(true);
+          await sendSmsOtp(phone, true);
         }
       } catch (err: any) {
         setLoginError(err?.message || String(err));
@@ -311,13 +518,7 @@ export default function Navbar({
           setLoginError("Phone number is required to register an account.");
           return;
         }
-        mockUserDb[username.toLowerCase()] = {
-          name: fullName,
-          email: username,
-          phone: phone,
-          role: signupRole
-        };
-        setSignupSuccess(true);
+        await sendSmsOtp(phone, true);
       } else if (authMode === 'forgot-password') {
         setForgotSuccess(true);
       } else if (authMode === 'reset-password') {
@@ -337,6 +538,11 @@ export default function Navbar({
       } catch (e) {
         console.error(e);
       }
+    }
+    try {
+      await firebaseAuth.signOut();
+    } catch (e) {
+      console.error(e);
     }
     setIsAdmin(false);
     setUserEmail(null);
@@ -536,7 +742,13 @@ export default function Navbar({
                     ? 'Create Account' 
                     : authMode === 'forgot-password' 
                     ? 'Forgot Password' 
-                    : 'Reset Password'}
+                    : authMode === 'reset-password'
+                    ? 'Reset Password'
+                    : authMode === 'phone-login'
+                    ? 'Phone Login'
+                    : authMode === 'phone-otp'
+                    ? 'Verify Phone'
+                    : 'Complete Registration'}
                 </h3>
                 <p className="text-xs text-brand-on-surface-variant font-light mt-0.5">
                   {authMode === 'login' 
@@ -545,7 +757,13 @@ export default function Navbar({
                     ? 'Sign up to register a new user account.'
                     : authMode === 'forgot-password'
                     ? 'Enter your email address to receive a secure password reset link.'
-                    : 'Choose a strong new password for your account.'}
+                    : authMode === 'reset-password'
+                    ? 'Choose a strong new password for your account.'
+                    : authMode === 'phone-login'
+                    ? 'Enter your mobile number to receive a one-time SMS verification code.'
+                    : authMode === 'phone-otp'
+                    ? `Please enter the 6-digit OTP code sent to ${phone}.`
+                    : 'We just need a few more details to set up your profile.'}
                 </p>
               </div>
             </div>
@@ -687,14 +905,15 @@ export default function Navbar({
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <form onSubmit={authMode === 'complete-phone-signup' ? handleCompletePhoneSignup : handleLoginSubmit} className="space-y-4">
+                <div id="recaptcha-container"></div>
                 {loginError && (
                   <div className="p-3 rounded-lg bg-red-50 border border-red-100 text-red-600 text-xs font-semibold text-center">
                     {loginError}
                   </div>
                 )}
 
-                {authMode === 'signup' && (
+                {(authMode === 'signup' || authMode === 'complete-phone-signup') && (
                   <div>
                     <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">
                       Full Name
@@ -710,7 +929,7 @@ export default function Navbar({
                   </div>
                 )}
 
-                {authMode !== 'reset-password' && (
+                {(authMode === 'login' || authMode === 'signup' || authMode === 'forgot-password' || authMode === 'complete-phone-signup') && (
                   <div>
                     <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">
                       {authMode === 'login' ? 'Email or Phone Number' : 'Email Address'}
@@ -726,7 +945,52 @@ export default function Navbar({
                   </div>
                 )}
 
-                {authMode !== 'forgot-password' && (
+                {(authMode === 'phone-login' || authMode === 'signup') && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">
+                      Phone Number
+                    </label>
+                    <div className="flex gap-2">
+                      <select
+                        value={phoneCountryCode}
+                        onChange={(e) => setPhoneCountryCode(e.target.value)}
+                        className="px-2 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
+                      >
+                        <option value="+91">+91 (IN)</option>
+                        <option value="+1">+1 (US)</option>
+                        <option value="+44">+44 (UK)</option>
+                        <option value="+971">+971 (AE)</option>
+                      </select>
+                      <input
+                        type="tel"
+                        required
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="e.g. 9638177321"
+                        className="flex-1 px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {authMode === 'phone-otp' && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">
+                      OTP Verification Code
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      required
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                      placeholder="e.g. 123456"
+                      className="w-full px-3.5 py-2.5 text-center text-lg font-mono tracking-widest bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
+                    />
+                  </div>
+                )}
+
+                {(authMode === 'login' || authMode === 'signup' || authMode === 'reset-password') && (
                   <div>
                     <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">
                       {authMode === 'reset-password' ? 'New Password' : 'Password'}
@@ -743,47 +1007,46 @@ export default function Navbar({
                 )}
 
                 {authMode === 'login' && (
-                  <div className="flex justify-end pt-1">
+                  <div className="flex justify-between items-center pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('phone-login');
+                        setLoginError('');
+                      }}
+                      className="text-[10px] font-bold text-brand-secondary hover:underline uppercase tracking-widest cursor-pointer text-left"
+                    >
+                      Login with Phone OTP
+                    </button>
                     <button
                       type="button"
                       onClick={() => {
                         setAuthMode('forgot-password');
                         setLoginError('');
                       }}
-                      className="text-[10px] font-bold text-gray-400 hover:text-brand-secondary uppercase tracking-widest cursor-pointer hover:underline"
+                      className="text-[10px] font-bold text-gray-400 hover:text-brand-secondary uppercase tracking-widest cursor-pointer hover:underline text-right"
                     >
                       Forgot Password?
                     </button>
                   </div>
                 )}
 
-                {authMode === 'signup' && (
-                  <div>
-                    <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">Phone Number</label>
-                    <input
-                      type="tel"
-                      required
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="e.g. 9638177321"
-                      className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
-                    />
+                {authMode === 'phone-login' && (
+                  <div className="flex justify-start pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('login');
+                        setLoginError('');
+                      }}
+                      className="text-[10px] font-bold text-brand-secondary hover:underline uppercase tracking-widest cursor-pointer"
+                    >
+                      Login with Password
+                    </button>
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-1">Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••••••"
-                    className="w-full px-3.5 py-2.5 text-xs bg-gray-50 border border-gray-200 rounded-lg text-brand-on-surface focus:outline-hidden focus:ring-1 focus:ring-brand-secondary focus:bg-white transition-all"
-                  />
-                </div>
-
-                {authMode === 'signup' && (
+                {(authMode === 'signup' || authMode === 'complete-phone-signup') && (
                   <div>
                     <label className="block text-[10px] font-bold text-brand-on-surface-variant uppercase tracking-widest mb-2 text-left">Register As</label>
                     <div className="grid grid-cols-2 gap-3">
@@ -819,20 +1082,24 @@ export default function Navbar({
                   <button
                     type="button"
                     onClick={() => {
-                      if (authMode === 'forgot-password' || authMode === 'reset-password') {
+                      if (authMode === 'forgot-password' || authMode === 'reset-password' || authMode === 'phone-login' || authMode === 'phone-otp' || authMode === 'complete-phone-signup') {
                         setAuthMode('login');
                         setLoginError('');
+                        setPhone('');
+                        setOtp('');
                       } else {
                         setIsLoginOpen(false);
                         setLoginError('');
                         setUsername('');
                         setPassword('');
                         setFullName('');
+                        setPhone('');
+                        setOtp('');
                       }
                     }}
                     className="flex-1 py-2.5 text-xs font-bold uppercase tracking-wider text-gray-500 border border-gray-200 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer text-center"
                   >
-                    {authMode === 'forgot-password' || authMode === 'reset-password' ? 'Back' : 'Cancel'}
+                    {authMode === 'forgot-password' || authMode === 'reset-password' || authMode === 'phone-login' || authMode === 'phone-otp' || authMode === 'complete-phone-signup' ? 'Back' : 'Cancel'}
                   </button>
                   <button
                     type="submit"
@@ -847,7 +1114,13 @@ export default function Navbar({
                       ? 'Sign Up' 
                       : authMode === 'forgot-password' 
                       ? 'Send Link' 
-                      : 'Save Password'}
+                      : authMode === 'reset-password'
+                      ? 'Save Password'
+                      : authMode === 'phone-login'
+                      ? 'Send OTP'
+                      : authMode === 'phone-otp'
+                      ? 'Verify OTP'
+                      : 'Register'}
                   </button>
                 </div>
               </form>

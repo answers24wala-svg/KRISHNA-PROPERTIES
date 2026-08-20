@@ -18,6 +18,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { dbService } from './dbService';
 import { Database, Wifi, WifiOff } from 'lucide-react';
 import { supabase } from './supabaseClient';
+import { firebaseAuth } from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 export default function App() {
   // Navigation State
@@ -82,6 +84,7 @@ export default function App() {
   useEffect(() => {
     loadProperties();
 
+    let supabaseUnsubscribe = () => {};
     if (dbService.isLiveDb() && supabase !== null) {
       // Get initial session
       supabase.auth.getSession().then(({ data: { session } }) => {
@@ -126,11 +129,49 @@ export default function App() {
           setIsAdmin(false);
         }
       });
-
-      return () => {
+      supabaseUnsubscribe = () => {
         subscription.unsubscribe();
       };
     }
+
+    // Listen for Firebase auth state changes
+    const unsubscribeFirebase = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const phone = firebaseUser.phoneNumber || undefined;
+        if (phone) {
+          if (dbService.isLiveDb() && supabase !== null) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('phone', phone)
+              .maybeSingle();
+
+            if (profile) {
+              const email = profile.email;
+              setUserEmail(email);
+              if (email?.toLowerCase() === 'gopalnaidu085@gmail.com') {
+                setIsAdmin(true);
+                setUserRole('seller');
+              } else {
+                setIsAdmin(false);
+                setUserRole(profile.role);
+              }
+            } else {
+              setUserEmail(phone);
+              setUserRole('buyer');
+            }
+          } else {
+            setUserEmail(phone);
+            setUserRole('buyer');
+          }
+        }
+      }
+    });
+
+    return () => {
+      supabaseUnsubscribe();
+      unsubscribeFirebase();
+    };
   }, []);
 
   // Add new property dynamically
